@@ -207,7 +207,8 @@ export default function SitePerformance({
           grp.toLowerCase().includes(searchQuery.toLowerCase()) ||
           loc.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesGroup = !selectedGroup || selectedGroup === 'All Groups' || grp.toLowerCase() === selectedGroup.toLowerCase();
-        return matchesSearch && matchesGroup;
+        const matchesSite = !selectedSite || selectedSite === 'All Sites' || site.siteName.toLowerCase() === selectedSite.toLowerCase();
+        return matchesSearch && matchesGroup && matchesSite;
       })
       .sort((a, b) => {
         let valA = a[sortField];
@@ -228,7 +229,7 @@ export default function SitePerformance({
         }
         return sortAsc ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0);
       });
-  }, [sitePerformanceData, searchQuery, selectedGroup, sortField, sortAsc]);
+  }, [sitePerformanceData, searchQuery, selectedGroup, selectedSite, sortField, sortAsc]);
 
   // Chart data formatted for EnterpriseBarChart & custom SVG charts
   const siteChartData = useMemo(() => {
@@ -262,10 +263,10 @@ export default function SitePerformance({
     topNOptions: siteTopNOptions
   } = useTopNFilter(siteChartData, 'Top 10');
 
-  // Reset pagination on search or group change
+  // Reset pagination on search, group, or site change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedGroup]);
+  }, [searchQuery, selectedGroup, selectedSite]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSites.length / pageSize));
   const paginatedSites = useMemo(() => {
@@ -283,10 +284,9 @@ export default function SitePerformance({
   };
 
   // =========================================================================
-  // 2. CHART CLICK FILTERING IMPLEMENTATION (Requirements 4, 5, 15)
-  // - Click data point -> filter to site using siteId
-  // - Click same data point again -> deselect / reset filter to All Sites
-  // - Click another data point -> switch selection
+  // 2. CHART CLICK DRILL-DOWN & FILTERING IMPLEMENTATION
+  // - Clicking a site on the chart opens the Site Drill-Down Drawer (just like table view)
+  // - Sets the active site filter for consistent dashboard telemetry
   // =========================================================================
   const handleChartSiteClick = (item) => {
     if (!item) return;
@@ -297,17 +297,18 @@ export default function SitePerformance({
     console.log("Resolved site:", siteName);
     console.log("Resolved siteId:", siteId);
 
-    // Toggle logic: Clicking the currently selected site resets filter to 'All Sites'
-    const isCurrentlySelected = selectedSite === siteName || 
-      (selectedSite !== 'All Sites' && siteId && String(selectedSite) === String(siteId));
+    // 1. Resolve full site object for drill-down modal
+    const targetSite = item.raw || (sites || []).find((s) => 
+      (s.id && (s.id === siteId || String(s.id) === String(siteId))) || 
+      (s.name && s.name.toLowerCase() === (siteName || '').toLowerCase())
+    ) || item;
 
-    if (isCurrentlySelected) {
-      console.log("Applying filter:", "All Sites");
-      if (onSiteSelect) onSiteSelect('All Sites');
-    } else {
-      console.log("Applying filter:", siteName);
-      // Pass siteName (or siteId) to update central filter state
-      if (onSiteSelect) onSiteSelect(siteName);
+    // 2. Open the comprehensive site performance drill-down drawer
+    setActiveSiteModal(targetSite);
+
+    // 3. Update central site filter selection
+    if (siteName && onSiteSelect) {
+      onSiteSelect(siteName);
     }
   };
 
@@ -860,7 +861,6 @@ export default function SitePerformance({
         isLight={isLight}
         height={340}
         selectedSite={selectedSite}
-        onHoverItem={(item) => setActiveSiteModal(item?.raw || item)}
         onItemClick={handleChartSiteClick}
       />
     </div>
@@ -879,7 +879,6 @@ export default function SitePerformance({
         isLight={isLight}
         height={340}
         selectedSite={selectedSite}
-        onHoverItem={(item) => setActiveSiteModal(item?.raw || item)}
         onItemClick={handleChartSiteClick}
       />
     </div>

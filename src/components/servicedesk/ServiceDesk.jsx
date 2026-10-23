@@ -8,12 +8,21 @@ import EnterpriseBarChart, { useTopNFilter } from '../common/EnterpriseBarChart'
 import EnterpriseDonutChart from '../common/EnterpriseDonutChart';
 import EnterpriseRadarChart from '../common/EnterpriseRadarChart';
 import { formatCategoryLabel, formatPercentage, formatNumber } from '../../utils/analyticsFormatters';
-
 import { CHART_COMPATIBILITY } from '../../utils/chartConfig';
+import SiteFilterDropdown from '../common/SiteFilterDropdown';
 
 const CATEGORY_CHART_TYPES = CHART_COMPATIBILITY.ticketsByCategory;
 
-export default function ServiceDesk({ serviceDeskData, triggerKey = 0, theme = 'dark', isLoading = false, selectedCategory = 'All Categories' }) {
+export default function ServiceDesk({ 
+  serviceDeskData, 
+  triggerKey = 0, 
+  theme = 'dark', 
+  isLoading = false, 
+  selectedCategory = 'All Categories',
+  selectedSite = 'All Sites',
+  onSiteSelect,
+  sites = []
+}) {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [userSelectedChartType, setUserSelectedChartType] = useState('Vertical Bar');
   const [sortOrder, setSortOrder] = useState('highest'); // 'highest' | 'lowest' | 'alphabetical'
@@ -498,10 +507,19 @@ export default function ServiceDesk({ serviceDeskData, triggerKey = 0, theme = '
               Service Desk & SLA Intelligence
             </h3>
             <p style={{ fontSize: '0.8125rem', color: isLight ? '#64748B' : '#94A3B8' }}>
-              {total} total service tickets processed across all sites
+              {total} total service tickets processed across {selectedSite && selectedSite !== 'All Sites' ? selectedSite : 'all sites'}
             </p>
           </div>
         </div>
+
+        {/* Site Filter Dropdown */}
+        <SiteFilterDropdown
+          selectedSite={selectedSite}
+          onSiteSelect={onSiteSelect}
+          sites={sites}
+          isLight={isLight}
+          accentColor="#FF5B22"
+        />
       </div>
 
       {/* 4 Compact Ticket Status KPI Cards */}

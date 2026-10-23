@@ -6,6 +6,7 @@ import ChartHeader from '../common/ChartHeader';
 import ChartLegend from '../common/ChartLegend';
 import { useTopNFilter } from '../common/EnterpriseBarChart';
 import { formatCategoryLabel, formatPercentage, formatNumber } from '../../utils/analyticsFormatters';
+import SiteFilterDropdown from '../common/SiteFilterDropdown';
 
 const COMPLIANCE_CHART_TYPES = [
   'Donut',
@@ -25,7 +26,15 @@ const PLANNED_CHART_TYPES = [
   'Radar'
 ];
 
-export default function PpmOperations({ ppmData, triggerKey = 0, theme = 'dark', selectedCategory = 'All Categories' }) {
+export default function PpmOperations({ 
+  ppmData, 
+  triggerKey = 0, 
+  theme = 'dark', 
+  selectedCategory = 'All Categories',
+  selectedSite = 'All Sites',
+  onSiteSelect,
+  sites = []
+}) {
   // Service selection: 'ppm' or 'softServices'
   const [activeService, setActiveService] = useState('ppm'); // 'ppm' | 'softServices'
 
@@ -1363,10 +1372,21 @@ export default function PpmOperations({ ppmData, triggerKey = 0, theme = 'dark',
               PPM & Soft Services Operations
             </h3>
             <p style={{ fontSize: '0.8125rem', color: textMuted, margin: '2px 0 0 0' }}>
-              Planned preventive maintenance & facility audit routines across 21 nationwide parks
+              {selectedSite && selectedSite !== 'All Sites'
+                ? `Planned preventive maintenance & facility audit routines for ${selectedSite}`
+                : 'Planned preventive maintenance & facility audit routines across 21 nationwide parks'}
             </p>
           </div>
         </div>
+
+        {/* Site Filter Dropdown */}
+        <SiteFilterDropdown
+          selectedSite={selectedSite}
+          onSiteSelect={onSiteSelect}
+          sites={sites}
+          isLight={isLight}
+          accentColor="#00C853"
+        />
       </div>
 
       {/* 3-Column Layout Matching User Screenshot:

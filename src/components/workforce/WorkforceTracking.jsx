@@ -733,7 +733,7 @@ export default function WorkforceTracking({
               Workforce Tracking
             </h3>
             <p style={{ fontSize: '0.8125rem', color: textMuted, margin: '2px 0 0 0' }}>
-              {totalEmployees} employees across all sites
+              {totalEmployees} employees across {selectedSite && selectedSite !== 'All Sites' ? selectedSite : 'all sites'}
             </p>
           </div>
         </div>

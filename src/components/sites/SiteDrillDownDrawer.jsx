@@ -24,7 +24,6 @@ import {
   ArrowRight,
   Filter,
   RefreshCw,
-  Info,
   ShieldCheck
 } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
@@ -1457,132 +1456,254 @@ export default function SiteDrillDownDrawer({
           <div
             className="glass-card"
             style={{
-              padding: '20px 24px',
+              padding: '24px',
               borderRadius: '16px',
-              backgroundColor: isLight ? '#F8FAFC' : 'rgba(255, 255, 255, 0.02)',
+              backgroundColor: isLight ? '#FFFFFF' : 'rgba(21, 28, 44, 0.75)',
               border: `1px solid ${borderCard}`,
+              boxShadow: isLight
+                ? '0 4px 20px -2px rgba(15, 23, 42, 0.05)'
+                : '0 10px 30px -5px rgba(0, 0, 0, 0.4)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '14px'
+              gap: '18px'
             }}
           >
-            {/* Header row with clean accent indicator */}
+            {/* Header row with icon badge, title, subtitle & live telemetry pill */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingBottom: '12px',
-                borderBottom: isLight ? '1px solid #E2E8F0' : '1px solid rgba(255, 255, 255, 0.06)'
+                flexWrap: 'wrap',
+                gap: '12px',
+                paddingBottom: '16px',
+                borderBottom: isLight ? '1px solid #E2E8F0' : '1px solid rgba(255, 255, 255, 0.08)'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '3px', height: '18px', borderRadius: '3px', backgroundColor: '#00C853' }} />
-                <Info size={16} color="#00C853" />
-                <h4 style={{ fontSize: '0.9375rem', fontWeight: 800, color: textPrimary, margin: 0, letterSpacing: '-0.01em' }}>
-                  At a Glance
-                </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: isLight ? 'rgba(0, 200, 83, 0.1)' : 'rgba(0, 200, 83, 0.15)',
+                    border: isLight ? '1px solid rgba(0, 200, 83, 0.25)' : '1px solid rgba(0, 200, 83, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <Activity size={18} color="#00C853" />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.9375rem', fontWeight: 800, color: textPrimary, margin: 0, letterSpacing: '-0.01em' }}>
+                    Site Performance at a Glance
+                  </h4>
+                  <p style={{ fontSize: '0.75rem', color: textMuted, margin: '2px 0 0 0' }}>
+                    Automated operational telemetry snapshot for {site?.name || site?.siteName || 'this site'}
+                  </p>
+                </div>
               </div>
-              <span
+
+              <div
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '9999px',
+                  backgroundColor: isLight ? 'rgba(0, 200, 83, 0.1)' : 'rgba(0, 230, 118, 0.12)',
+                  border: isLight ? '1px solid rgba(0, 200, 83, 0.25)' : '1px solid rgba(0, 200, 83, 0.3)',
                   fontSize: '0.6875rem',
                   fontWeight: 700,
-                  color: '#00C853',
-                  padding: '3px 9px',
-                  borderRadius: '6px',
-                  backgroundColor: isLight ? 'rgba(0, 200, 83, 0.1)' : 'rgba(0, 230, 118, 0.12)'
+                  color: isLight ? '#047857' : '#00E676',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase'
                 }}
               >
-                Telemetry Snapshot
-              </span>
-            </div>
-
-            {/* Structured KPI status pills */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '9px 12px',
-                  borderRadius: '10px',
-                  backgroundColor: isLight ? '#FFFFFF' : 'rgba(255, 255, 255, 0.03)',
-                  border: `1px solid ${borderCard}`
-                }}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: healthVal >= 85 ? '#00C853' : (healthVal > 0 ? '#FF9100' : '#EF4444'), flexShrink: 0 }} />
-                <span style={{ fontSize: '0.75rem', color: textMuted }}>Health:</span>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: textPrimary }}>{healthVal}%</span>
-                <span style={{ fontSize: '0.6875rem', color: textMuted }}>({healthVal >= 90 ? 'Strong' : healthVal >= 70 ? 'Moderate' : 'Low'})</span>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '9px 12px',
-                  borderRadius: '10px',
-                  backgroundColor: isLight ? '#FFFFFF' : 'rgba(255, 255, 255, 0.03)',
-                  border: `1px solid ${borderCard}`
-                }}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: slaVal >= 80 ? '#00C853' : (slaVal > 0 ? '#FF9100' : '#EF4444'), flexShrink: 0 }} />
-                <span style={{ fontSize: '0.75rem', color: textMuted }}>SLA Compliance:</span>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: textPrimary }}>{slaVal}%</span>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '9px 12px',
-                  borderRadius: '10px',
-                  backgroundColor: isLight ? '#FFFFFF' : 'rgba(255, 255, 255, 0.03)',
-                  border: `1px solid ${borderCard}`
-                }}
-              >
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: ppmVal >= 70 ? '#00C853' : (ppmVal > 0 ? '#FF9100' : '#EF4444'), flexShrink: 0 }} />
-                <span style={{ fontSize: '0.75rem', color: textMuted }}>PPM Adherence:</span>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: textPrimary }}>{ppmVal}%</span>
+                <span className="pulse-dot" style={{ width: '6px', height: '6px', backgroundColor: '#00C853', borderRadius: '50%' }} />
+                <span>Telemetry Snapshot</span>
               </div>
             </div>
 
-            {/* Derived areas requiring attention */}
-            <div style={{ marginTop: '2px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: textPrimary, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
-                Areas requiring attention:
+            {/* Structured KPI status cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: isLight ? '#F8FAFC' : 'rgba(255, 255, 255, 0.03)',
+                  border: `1px solid ${borderCard}`
+                }}
+              >
+                <span
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    backgroundColor: healthVal >= 85 ? '#00C853' : (healthVal > 0 ? '#FF9100' : '#EF4444'),
+                    boxShadow: healthVal >= 85 ? '0 0 8px rgba(0, 200, 83, 0.4)' : 'none',
+                    flexShrink: 0
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.6875rem', color: textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Facility Health
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: textPrimary }}>
+                      {healthVal}%
+                    </span>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: healthVal >= 90 ? '#00C853' : healthVal >= 70 ? '#FF9100' : '#EF4444' }}>
+                      ({healthVal >= 90 ? 'Optimal' : healthVal >= 70 ? 'Moderate' : 'Attention'})
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: isLight ? '#F8FAFC' : 'rgba(255, 255, 255, 0.03)',
+                  border: `1px solid ${borderCard}`
+                }}
+              >
+                <span
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    backgroundColor: slaVal >= 80 ? '#00C853' : (slaVal > 0 ? '#FF9100' : '#EA580C'),
+                    boxShadow: slaVal >= 80 ? '0 0 8px rgba(0, 200, 83, 0.4)' : 'none',
+                    flexShrink: 0
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.6875rem', color: textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    SLA Compliance
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: textPrimary }}>
+                      {slaVal}%
+                    </span>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: slaVal >= 80 ? '#00C853' : (slaVal > 0 ? '#EA580C' : textMuted) }}>
+                      ({slaVal >= 80 ? 'Compliant' : slaVal > 0 ? 'Lagging' : 'No SLA Target'})
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: isLight ? '#F8FAFC' : 'rgba(255, 255, 255, 0.03)',
+                  border: `1px solid ${borderCard}`
+                }}
+              >
+                <span
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    backgroundColor: ppmVal >= 70 ? '#00C853' : (ppmVal > 0 ? '#FF9100' : '#94A3B8'),
+                    boxShadow: ppmVal >= 70 ? '0 0 8px rgba(0, 200, 83, 0.4)' : 'none',
+                    flexShrink: 0
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.6875rem', color: textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    PPM Adherence
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: textPrimary }}>
+                      {ppmVal}%
+                    </span>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: ppmVal >= 70 ? '#00C853' : (ppmVal > 0 ? '#FF9100' : textMuted) }}>
+                      ({ppmVal >= 70 ? 'On Track' : ppmVal > 0 ? 'Pending' : 'Unscheduled'})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Derived operational drivers & attention items */}
+            <div
+              style={{
+                padding: '14px 16px',
+                borderRadius: '12px',
+                backgroundColor: isLight ? '#F1F5F9' : 'rgba(255, 255, 255, 0.03)',
+                border: isLight ? '1px solid #E2E8F0' : '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: textPrimary,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <ShieldCheck size={14} color="#00C853" />
+                <span>Operational Highlights & Action Items</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {healthVal >= 90 && slaVal >= 80 && ppmVal >= 70 ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: isLight ? '#047857' : '#00E676' }}>
+                    <CheckCircle2 size={15} color="#00C853" style={{ flexShrink: 0 }} />
+                    <span>All operational telemetry parameters and facility maintenance cycles are operating at peak efficiency.</span>
+                  </div>
+                ) : null}
+
                 {slaVal < 80 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: isLight ? '#334155' : '#CBD5E1' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#EA580C', flexShrink: 0 }} />
-                    <span>Review SLA-related records and unresolved service requests.</span>
+                    <span>Turnaround Time (TAT) compliance is below benchmark ({slaVal}%). Review pending service requests.</span>
                   </div>
                 )}
+
                 {ppmVal < 80 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: isLight ? '#334155' : '#CBD5E1' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FF9100', flexShrink: 0 }} />
-                    <span>Check pending preventive-maintenance activities across equipment units.</span>
+                    <span>Planned Preventive Maintenance adherence is at {ppmVal}%. Ensure scheduled tasks are completed on time.</span>
                   </div>
                 )}
+
                 {operationalBreakdown.overduePpm > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: isLight ? '#334155' : '#CBD5E1' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#EF4444', flexShrink: 0 }} />
-                    <span>Investigate overdue maintenance tasks to avoid unscheduled equipment downtime.</span>
+                    <span>{operationalBreakdown.overduePpm} maintenance work order(s) are overdue. Prompt intervention advised.</span>
                   </div>
                 )}
+
                 {healthVal < 90 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: isLight ? '#334155' : '#CBD5E1' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FF9100', flexShrink: 0 }} />
-                    <span>Inspect assets flagged with degraded health scores.</span>
+                    <span>Facility health index is at {healthVal}%. Inspect critical assets flagged for attention.</span>
                   </div>
                 )}
-                {healthVal >= 90 && slaVal >= 90 && ppmVal >= 90 && (
+
+                {healthVal >= 90 && (slaVal < 80 || ppmVal < 80) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: isLight ? '#334155' : '#CBD5E1' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00C853', flexShrink: 0 }} />
-                    <span>Maintain scheduled periodic maintenance and life-safety checklists.</span>
+                    <span>Facility equipment health is strong ({healthVal}%) across {operationalBreakdown.totalAssets} monitored assets.</span>
                   </div>
                 )}
               </div>

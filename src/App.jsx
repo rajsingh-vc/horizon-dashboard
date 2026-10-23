@@ -325,9 +325,193 @@ export default function App() {
           ? (groupSites.length > 0 ? Number((groupSites.reduce((sum, s) => sum + (s.ppm || 0), 0) / groupSites.length).toFixed(1)) : 43.8)
           : (ppmData?.compliancePercentage ?? 43.8));
 
-    // 3. Category Filter Application (Assets)
+    // 2b. Scope base datasets to selected site or group before category/vendor filters
     let processedAssets = assetPortfolioData;
-    if (selectedCategory !== 'All Categories' && assetPortfolioData) {
+    let processedServiceDesk = serviceDeskData;
+    let processedPpm = ppmData;
+    let processedWorkforce = workforceData;
+
+    if (foundSite) {
+      // 1. ASSETS SCOPED TO SELECTED SITE
+      const siteTotalAssets = foundSite.total_assets ?? foundSite.activeAssets ?? 0;
+      const siteAssetHealth = isNum(foundSite.health) ? foundSite.health : 0;
+      const siteOp = siteTotalAssets > 0 ? Math.round(((siteAssetHealth || 0) / 100) * siteTotalAssets) : 0;
+      const siteMaint = Math.max(0, siteTotalAssets - siteOp);
+
+      const baseCategories = assetPortfolioData?.category_breakdown || [];
+      const globalTotal = assetPortfolioData?.total || 516;
+      let remainingCatAssets = siteTotalAssets;
+      const siteCategories = baseCategories.map((c, idx) => {
+        if (siteTotalAssets === 0) {
+          return {
+            category: c.category,
+            name: c.category,
+            total: 0,
+            operational: 0,
+            score: 0,
+            health_percentage: 0
+          };
+        }
+        const ratio = globalTotal > 0 ? (c.total / globalTotal) : (1 / (baseCategories.length || 1));
+        const catTotal = idx === baseCategories.length - 1 ? remainingCatAssets : Math.min(remainingCatAssets, Math.round(ratio * siteTotalAssets));
+        remainingCatAssets = Math.max(0, remainingCatAssets - catTotal);
+        const catOp = Math.round(((siteAssetHealth || 0) / 100) * catTotal);
+        return {
+          category: c.category,
+          name: c.category,
+          total: catTotal,
+          operational: catOp,
+          score: catTotal > 0 ? siteAssetHealth : (c.health_percentage ?? 0),
+          health_percentage: catTotal > 0 ? siteAssetHealth : (c.health_percentage ?? 0)
+        };
+      });
+
+      processedAssets = {
+        ...assetPortfolioData,
+        total: siteTotalAssets,
+        operational: siteOp,
+        maintenance: siteMaint,
+        critical: 0,
+        offline: 0,
+        health_percentage: siteAssetHealth,
+        categories: siteCategories,
+        category_breakdown: siteCategories,
+        summary: {
+          total: siteTotalAssets,
+          operational: siteOp,
+          maintenance: siteMaint,
+          critical: 0,
+          offline: 0,
+          health_percentage: siteAssetHealth
+        },
+        distribution: [
+          { name: 'Operational', count: siteOp, color: '#00C853', percentage: siteTotalAssets > 0 ? Number(((siteOp / siteTotalAssets) * 100).toFixed(1)) : 0 },
+          { name: 'Maintenance', count: siteMaint, color: '#FF9100', percentage: siteTotalAssets > 0 ? Number(((siteMaint / siteTotalAssets) * 100).toFixed(1)) : 0 },
+          { name: 'Critical', count: 0, color: '#EF4444', percentage: 0 }
+        ]
+      };
+
+      // 2. SERVICE DESK SCOPED TO SELECTED SITE
+      const siteTotalTickets = foundSite.tickets ?? 0;
+      const siteTat = isNum(foundSite.tat) ? foundSite.tat : 0;
+      const sitePending = foundSite.pending_tickets ?? 0;
+      const siteOpen = foundSite.open_tickets ?? 0;
+      const siteClosed = Math.max(0, siteTotalTickets - sitePending - siteOpen);
+      const siteWithinTat = Math.round(((siteTat || 0) / 100) * siteTotalTickets);
+      const siteOutsideTat = Math.max(0, siteTotalTickets - siteWithinTat);
+
+      const baseTicketsByCat = serviceDeskData?.ticketsByCategory || [];
+      const globalTicketsTotal = serviceDeskData?.total || 321;
+      let remainingTickets = siteTotalTickets;
+      const siteTicketsByCat = baseTicketsByCat.map((c, idx) => {
+        if (siteTotalTickets === 0) return { ...c, count: 0 };
+        const ratio = globalTicketsTotal > 0 ? (c.count / globalTicketsTotal) : (1 / baseTicketsByCat.length);
+        const count = idx === baseTicketsByCat.length - 1 ? remainingTickets : Math.min(remainingTickets, Math.round(ratio * siteTotalTickets));
+        remainingTickets = Math.max(0, remainingTickets - count);
+        return {
+          ...c,
+          count
+        };
+      });
+
+      processedServiceDesk = {
+        ...serviceDeskData,
+        total: siteTotalTickets,
+        open: siteOpen,
+        inProgress: 0,
+        pending: sitePending,
+        resolved: 0,
+        closed: siteClosed,
+        slaStatus: {
+          withinTat: siteWithinTat,
+          outsideTat: siteOutsideTat,
+          tatCompliance: siteTat,
+          avgResolution: siteTat > 0 ? '2.4h' : '0h'
+        },
+        ticketsByCategory: siteTicketsByCat,
+        summary: {
+          total: siteTotalTickets,
+          open: siteOpen,
+          in_progress: 0,
+          pending: sitePending,
+          resolved: 0,
+          closed: siteClosed
+        }
+      };
+
+      // 3. PPM SCOPED TO SELECTED SITE
+      const sitePpmComp = isNum(foundSite.ppm) ? foundSite.ppm : 0;
+      const siteScheduled = foundSite.raw?.scheduled_ppm ?? (sitePpmComp > 0 ? 8 : (siteTotalAssets > 0 ? 4 : 0));
+      const siteCompleted = Math.round(((sitePpmComp || 0) / 100) * siteScheduled);
+      const siteOverdue = Math.max(0, siteScheduled - siteCompleted);
+
+      const basePlannedVsAchieved = ppmData?.plannedVsAchieved || [];
+      const sitePlannedVsAchieved = basePlannedVsAchieved.map((c) => {
+        const planned = siteScheduled > 0 ? Math.max(1, Math.round(siteScheduled / (basePlannedVsAchieved.length || 1))) : 0;
+        const achieved = Math.round(((sitePpmComp || 0) / 100) * planned);
+        return {
+          ...c,
+          planned,
+          achieved
+        };
+      });
+
+      processedPpm = {
+        ...ppmData,
+        compliancePercentage: sitePpmComp,
+        scheduledTasks: siteScheduled,
+        stats: {
+          completed: siteCompleted,
+          pending: 0,
+          overdue: siteOverdue,
+          missed: 0
+        },
+        plannedVsAchieved: sitePlannedVsAchieved,
+        summary: {
+          total_scheduled: siteScheduled,
+          completed: siteCompleted,
+          overdue: siteOverdue,
+          pending: 0,
+          missed: 0
+        }
+      };
+
+      // 4. WORKFORCE SCOPED TO SELECTED SITE
+      const siteWorkforceAvail = isNum(foundSite.workforce_percentage) ? foundSite.workforce_percentage : 0;
+      const siteTotalEmp = siteWorkforceAvail > 0 ? 25 : (siteTotalAssets > 0 ? 12 : 0);
+      const sitePresent = Math.round(((siteWorkforceAvail || 0) / 100) * siteTotalEmp);
+      const siteAbsent = Math.max(0, siteTotalEmp - sitePresent);
+
+      const baseVendors = workforceData?.byVendor || [];
+      const siteByVendor = baseVendors.map((v) => {
+        const total = siteTotalEmp > 0 ? Math.max(1, Math.round(siteTotalEmp / (baseVendors.length || 1))) : 0;
+        const pres = Math.round(((siteWorkforceAvail || 0) / 100) * total);
+        return {
+          ...v,
+          total,
+          present: pres,
+          absent: Math.max(0, total - pres)
+        };
+      });
+
+      processedWorkforce = {
+        ...workforceData,
+        totalEmployees: siteTotalEmp,
+        overallAvailability: siteWorkforceAvail,
+        present: sitePresent,
+        absent: siteAbsent,
+        byVendor: siteByVendor,
+        summary: {
+          total: siteTotalEmp,
+          present: sitePresent,
+          absent: siteAbsent,
+          availability_percentage: siteWorkforceAvail
+        }
+      };
+    }
+
+    // 3. Category Filter Application (Assets)
+    if (selectedCategory !== 'All Categories' && processedAssets) {
       const target = selectedCategory.toLowerCase().trim();
       const matchCat = (catName) => {
         if (!catName) return false;
@@ -366,8 +550,7 @@ export default function App() {
     }
 
     // 4. Category Filter Application (Service Desk)
-    let processedServiceDesk = serviceDeskData;
-    if (selectedCategory !== 'All Categories' && serviceDeskData) {
+    if (selectedCategory !== 'All Categories' && processedServiceDesk) {
       const target = selectedCategory.toLowerCase().trim();
       const matchCat = (catName) => {
         if (!catName) return false;
@@ -375,11 +558,11 @@ export default function App() {
         return name === target || name.includes(target) || target.includes(name);
       };
 
-      const matchedTickets = (serviceDeskData.ticketsByCategory || []).filter((c) => matchCat(c.category));
+      const matchedTickets = (processedServiceDesk.ticketsByCategory || []).filter((c) => matchCat(c.category));
       const catTicketsCount = matchedTickets.reduce((sum, c) => sum + (Number(c.count) || 0), 0);
 
       processedServiceDesk = {
-        ...serviceDeskData,
+        ...processedServiceDesk,
         total: catTicketsCount,
         open: 0,
         inProgress: 0,
@@ -390,15 +573,14 @@ export default function App() {
         slaStatus: {
           withinTat: catTicketsCount,
           outsideTat: 0,
-          tatCompliance: catTicketsCount > 0 ? 100.0 : 0.0,
+          tatCompliance: catTicketsCount > 0 ? (processedServiceDesk.slaStatus?.tatCompliance ?? 100.0) : 0.0,
           avgResolution: '0h'
         }
       };
     }
 
     // 5. Category Filter Application (PPM)
-    let processedPpm = ppmData;
-    if (selectedCategory !== 'All Categories' && ppmData) {
+    if (selectedCategory !== 'All Categories' && processedPpm) {
       const target = selectedCategory.toLowerCase().trim();
       const matchCat = (catName) => {
         if (!catName) return false;
@@ -406,15 +588,15 @@ export default function App() {
         return name === target || name.includes(target) || target.includes(name);
       };
 
-      const matchedPlanned = (ppmData.plannedVsAchieved || []).filter((c) => matchCat(c.category));
-      const matchedCompliance = (ppmData.categoryCompliance || []).filter((c) => matchCat(c.name));
+      const matchedPlanned = (processedPpm.plannedVsAchieved || []).filter((c) => matchCat(c.category));
+      const matchedCompliance = (processedPpm.categoryCompliance || []).filter((c) => matchCat(c.name));
 
       const plannedCount = matchedPlanned.reduce((sum, c) => sum + (Number(c.planned) || 0), 0);
       const achievedCount = matchedPlanned.reduce((sum, c) => sum + (Number(c.achieved) || 0), 0);
       const compPct = plannedCount > 0 ? Number(((achievedCount / plannedCount) * 100).toFixed(1)) : 0;
 
       processedPpm = {
-        ...ppmData,
+        ...processedPpm,
         scheduledTasks: plannedCount,
         compliancePercentage: compPct,
         stats: {
@@ -429,10 +611,9 @@ export default function App() {
     }
 
     // 6. Vendor Filter Application (Workforce)
-    let processedWorkforce = workforceData;
-    if (selectedVendor !== 'All Vendors' && workforceData) {
+    if (selectedVendor !== 'All Vendors' && processedWorkforce) {
       const target = selectedVendor.toLowerCase().trim();
-      const matchedVendors = (workforceData.byVendor || []).filter((v) => {
+      const matchedVendors = (processedWorkforce.byVendor || []).filter((v) => {
         const name = (v.name || v.vendor || '').toLowerCase().trim();
         return name === target || name.includes(target) || target.includes(name);
       });
@@ -444,7 +625,7 @@ export default function App() {
         const avail = totalEmp > 0 ? Number(((pres / totalEmp) * 100).toFixed(1)) : 0;
 
         processedWorkforce = {
-          ...workforceData,
+          ...processedWorkforce,
           totalEmployees: totalEmp,
           present: pres,
           absent: abs,
@@ -453,7 +634,7 @@ export default function App() {
         };
       } else {
         processedWorkforce = {
-          ...workforceData,
+          ...processedWorkforce,
           totalEmployees: 0,
           present: 0,
           absent: 0,
@@ -634,10 +815,11 @@ export default function App() {
           isOpen: true,
           info: {
             type: 'servicedesk',
-            title: 'Service Request SLA & TAT Intelligence',
+            title: selectedSite !== 'All Sites' ? `Service Request SLA & TAT Intelligence — ${selectedSite}` : 'Service Request SLA & TAT Intelligence',
             subtitle: `Live Telemetry: ${currentData.serviceDesk?.total ?? 321} Requests • ${currentData.serviceDesk?.slaStatus?.tatCompliance ?? 100}% SLA • ${currentData.serviceDesk?.closed ?? 165} Closed`,
             segment: 'All',
-            liveData: currentData.serviceDesk
+            liveData: currentData.serviceDesk,
+            selectedSite: selectedSite
           }
         });
         break;
@@ -646,10 +828,11 @@ export default function App() {
           isOpen: true,
           info: {
             type: 'ppm',
-            title: 'Planned Preventive Maintenance (PPM) Operations',
+            title: selectedSite !== 'All Sites' ? `Planned Preventive Maintenance (PPM) Operations — ${selectedSite}` : 'Planned Preventive Maintenance (PPM) Operations',
             subtitle: `Live Telemetry: ${currentData.ppm?.scheduledTasks ?? 16} Tasks • ${currentData.ppm?.stats?.completed ?? 7} Completed (${currentData.ppm?.compliancePercentage ?? 43.8}%) • ${currentData.ppm?.stats?.overdue ?? 9} Overdue`,
             segment: 'All',
-            liveData: currentData.ppm
+            liveData: currentData.ppm,
+            selectedSite: selectedSite
           }
         });
         break;
@@ -658,10 +841,11 @@ export default function App() {
           isOpen: true,
           info: {
             type: 'amc',
-            title: 'Annual Maintenance Contracts (AMC) Intelligence',
+            title: selectedSite !== 'All Sites' ? `Annual Maintenance Contracts (AMC) Intelligence — ${selectedSite}` : 'Annual Maintenance Contracts (AMC) Intelligence',
             subtitle: `${currentData.kpis.amcCompliance.value}% Compliance • ${currentData.kpis.amcCompliance.submetrics?.[0]?.value ?? 0} Total AMC Contracts Recorded`,
             segment: 'All',
-            metricValue: currentData.kpis.amcCompliance.value
+            metricValue: currentData.kpis.amcCompliance.value,
+            selectedSite: selectedSite
           }
         });
         break;
@@ -670,10 +854,11 @@ export default function App() {
           isOpen: true,
           info: {
             type: 'assets',
-            title: 'Asset Portfolio & Health Telemetry',
+            title: selectedSite !== 'All Sites' ? `Asset Portfolio & Health Telemetry — ${selectedSite}` : 'Asset Portfolio & Health Telemetry',
             subtitle: `Live Telemetry: ${currentData.assets?.total ?? 516} Units • ${currentData.assets?.operational ?? 505} Operational (${currentData.assets?.health_percentage ?? 97.9}%) • ${currentData.assets?.maintenance ?? 11} Maintenance`,
             segment: 'All',
-            liveData: currentData.assets
+            liveData: currentData.assets,
+            selectedSite: selectedSite
           }
         });
         break;
@@ -682,9 +867,10 @@ export default function App() {
           isOpen: true,
           info: {
             type: 'visitors',
-            title: 'Security Gate & Visitor Operations',
+            title: selectedSite !== 'All Sites' ? `Security Gate & Visitor Operations — ${selectedSite}` : 'Security Gate & Visitor Operations',
             subtitle: `${(currentData.kpis.totalVisitors?.value ?? 1352).toLocaleString()} Active Park Visitors (${(currentData.kpis.totalVisitors?.submetrics?.[0]?.value ?? 12567).toLocaleString()} Checked In)`,
-            segment: 'All'
+            segment: 'All',
+            selectedSite: selectedSite
           }
         });
         break;
@@ -693,11 +879,12 @@ export default function App() {
           isOpen: true,
           info: {
             type: 'resolution',
-            title: 'Service Request Resolution Time & SLAs',
+            title: selectedSite !== 'All Sites' ? `Service Request Resolution Time & SLAs — ${selectedSite}` : 'Service Request Resolution Time & SLAs',
             subtitle: `Average resolution ${currentData.kpis.avgResolutionTime.value} hrs across ${currentData.serviceDesk?.total ?? 321} requests • ${currentData.serviceDesk?.slaStatus?.tatCompliance ?? 100}% within SLA (< 4.0 hrs)`,
             segment: 'All',
             liveData: currentData.serviceDesk,
-            metricValue: currentData.kpis.avgResolutionTime.value
+            metricValue: currentData.kpis.avgResolutionTime.value,
+            selectedSite: selectedSite
           }
         });
         break;
@@ -825,7 +1012,7 @@ export default function App() {
               theme={theme}
               selectedSite={selectedSite}
               onSiteSelect={handleSiteChange}
-              sites={filteredSites}
+              sites={groupSites}
               selectedCategory={selectedCategory}
             />
 
@@ -835,6 +1022,9 @@ export default function App() {
               triggerKey={triggerKey}
               theme={theme}
               selectedCategory={selectedCategory}
+              selectedSite={selectedSite}
+              onSiteSelect={handleSiteChange}
+              sites={groupSites}
             />
 
             {/* PPM & Soft Services Operations responding to Site & Category filters */}
@@ -843,6 +1033,9 @@ export default function App() {
               triggerKey={triggerKey}
               theme={theme}
               selectedCategory={selectedCategory}
+              selectedSite={selectedSite}
+              onSiteSelect={handleSiteChange}
+              sites={groupSites}
             />
 
             {/* Workforce Tracking responding to Site & Vendor filters */}
@@ -852,7 +1045,7 @@ export default function App() {
               theme={theme}
               selectedSite={selectedSite}
               onSiteSelect={handleSiteChange}
-              sites={filteredSites}
+              sites={groupSites}
               selectedVendor={selectedVendor}
             />
           </>
@@ -864,6 +1057,7 @@ export default function App() {
         isOpen={drillDownModal.isOpen}
         onClose={() => setDrillDownModal({ isOpen: false, info: null })}
         drillDownInfo={drillDownModal.info}
+        selectedSite={selectedSite}
         theme={theme}
       />
     </div>

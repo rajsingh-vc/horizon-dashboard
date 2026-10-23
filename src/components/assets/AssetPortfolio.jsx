@@ -6,6 +6,7 @@ import EnterpriseRadarChart from '../common/EnterpriseRadarChart';
 import EnterpriseDonutChart from '../common/EnterpriseDonutChart';
 import { CHART_COMPATIBILITY } from '../../utils/chartConfig';
 import { formatCategoryLabel, formatPercentage, formatNumber } from '../../utils/analyticsFormatters';
+import SiteFilterDropdown from '../common/SiteFilterDropdown';
 
 export default function AssetPortfolio({
   assetsData,
@@ -210,6 +211,15 @@ export default function AssetPortfolio({
             </p>
           </div>
         </div>
+
+        {/* Site Filter Dropdown */}
+        <SiteFilterDropdown
+          selectedSite={selectedSite}
+          onSiteSelect={onSiteSelect}
+          sites={sites}
+          isLight={isLight}
+          accentColor="#10B981"
+        />
       </div>
 
       {/* 3-Column Chart Cards Grid */}

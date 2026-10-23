@@ -3,8 +3,16 @@ import { ddmmToISO } from '../utils/kpiVisibility.js';
 // Horizon Industrial Parks - API Service for Live Telemetry
 // Connects to admin.vibecopilot.ai with fallback to exact certified snapshots
 
-const API_BASE = 'https://admin.vibecopilot.ai/api/v1/grouped_dashboard';
-const AUTH_TOKEN = '442176831c6904571c640e95b48c4bb00bc4525207afcb4e';
+// =========================================================================
+// DOMAIN / ENVIRONMENT CONFIGURATION:
+// Switch between Localhost (5174) and Live Domain:
+// =========================================================================
+export const APP_URL = import.meta.env.VITE_APP_URL || 'https://horizon.dashboard.vibesandbox.live';
+
+// API Configuration (Uncomment localhost if using local mock server on 5174):
+// const API_BASE = 'http://localhost:5174/api/v1/grouped_dashboard';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://admin.vibecopilot.ai/api/v1/grouped_dashboard';
+const AUTH_TOKEN = import.meta.env.VITE_AUTH_TOKEN || '442176831c6904571c640e95b48c4bb00bc4525207afcb4e';
 
 const CATEGORY_COLORS = [
   '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
@@ -696,7 +704,7 @@ export async function fetchGroupedDashboard({
       params.append('site_id', siteId);
     }
 
-    const res = await fetch(`https://admin.vibecopilot.ai/api/v1/grouped_dashboard.json?${params.toString()}`, {
+    const res = await fetch(`${API_BASE}.json?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json, text/plain, */*',
@@ -725,7 +733,7 @@ export async function fetchOrgAssociates({
   companyId = 84
 } = {}) {
   try {
-    const res = await fetch(`https://admin.vibecopilot.ai/api/v1/grouped_dashboard/org_associates.json?company_id=${companyId}`, {
+    const res = await fetch(`${API_BASE}/org_associates.json?company_id=${companyId}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json, text/plain, */*',

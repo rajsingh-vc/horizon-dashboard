@@ -39,7 +39,7 @@ const PALETTE = [
    REPRESENTATIVE RAW DATASETS (FOR ITEMIZED TABLE VIEW)
    ========================================================================= */
 
-const GENERATE_ASSETS = () => {
+const GENERATE_ASSETS = (activeSite = 'All Sites', liveData = null) => {
   const breakdownAssets = [
     { id: 'AST-7701', name: 'DG AMF Synchronizing Panel 1', category: 'Electrical', site: 'Farukh Nagar 1', status: 'BreakDown', health: 45.0, priority: 'High', technician: 'Vijay Kumar (In-House)' },
     { id: 'AST-7802', name: 'Fire Hydrant Booster Pump 2', category: 'Pump', site: 'Malur', status: 'BreakDown', health: 52.0, priority: 'High', technician: 'Ramesh Gowda (In-House)' },
@@ -63,6 +63,59 @@ const GENERATE_ASSETS = () => {
     { cat: 'CCTV', count: 3 }
   ];
 
+  const isSpecificSite = activeSite && activeSite !== 'All Sites';
+
+  // If a specific site is selected, produce records strictly for that site
+  if (isSpecificSite) {
+    const siteKey = activeSite.toLowerCase().trim();
+    // 1. Filter breakdown assets matching this specific site
+    const siteBreakdowns = breakdownAssets.filter((item) => {
+      const s = String(item.site || '').toLowerCase().trim();
+      return s === siteKey || s.includes(siteKey) || siteKey.includes(s);
+    });
+
+    const siteTotal = liveData?.total !== undefined ? Number(liveData.total) : null;
+    const siteOpCount = liveData?.operational !== undefined
+      ? Number(liveData.operational)
+      : (siteTotal !== null ? Math.max(0, siteTotal - siteBreakdowns.length) : null);
+
+    // If site has 0 recorded assets, return empty array
+    if (siteTotal === 0 || (siteTotal !== null && siteOpCount === 0 && siteBreakdowns.length === 0)) {
+      return [];
+    }
+
+    // Determine target operational units to generate for this site
+    const targetOpCount = siteOpCount !== null ? Math.min(siteOpCount, 45) : 35;
+    const siteOpAssets = [];
+    let countIdx = 100;
+    const siteSlug = activeSite.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PARK';
+
+    // Distribute operational assets across categories
+    let generated = 0;
+    for (let c = 0; c < operationalCategories.length && generated < targetOpCount; c++) {
+      const { cat } = operationalCategories[c];
+      const perCat = Math.max(1, Math.floor((targetOpCount - generated) / (operationalCategories.length - c)));
+      const take = Math.min(perCat, targetOpCount - generated);
+      for (let i = 0; i < take; i++) {
+        countIdx++;
+        generated++;
+        siteOpAssets.push({
+          id: `AST-${cat.slice(0, 3).toUpperCase()}-${siteSlug}-${countIdx}`,
+          name: `${cat} Equipment Unit #${i + 1} (${activeSite})`,
+          category: cat,
+          site: activeSite,
+          status: 'Operational',
+          health: 100.0,
+          priority: 'Normal',
+          technician: `${activeSite} Operations Team`
+        });
+      }
+    }
+
+    return [...siteBreakdowns, ...siteOpAssets];
+  }
+
+  // All Sites: Return full nationwide inventory across parks
   const operationalAssets = [];
   const sitesList = ['Farukh Nagar 1', 'Malur', 'Farukh Nagar 2', 'Bilaspur', 'Koka', 'Luhari', 'Verna, Goa', 'Chakan V'];
 
@@ -1029,10 +1082,12 @@ export default function DrillDownModal({
   isOpen,
   onClose,
   drillDownInfo,
-  theme = 'dark'
+  theme = 'dark',
+  selectedSite = 'All Sites'
 }) {
   const isLight = theme === 'light';
   const modalRef = useRef(null);
+  const activeSite = drillDownInfo?.selectedSite || selectedSite || 'All Sites';
 
   // View state: 'CHARTS' or 'TABLE'
   const [viewMode, setViewMode] = useState('CHARTS');
@@ -1083,14 +1138,14 @@ export default function DrillDownModal({
     if (!drillDownInfo) return [];
     const type = drillDownInfo.type;
 
-    if (type === 'assets') return GENERATE_ASSETS();
+    if (type === 'assets') return GENERATE_ASSETS(activeSite, drillDownInfo.liveData);
     if (type === 'servicedesk') return GENERATE_TICKETS();
     if (type === 'ppm') return GENERATE_PPM_TASKS();
     if (type === 'amc') return GENERATE_AMC_CONTRACTS();
     if (type === 'visitors') return GENERATE_VISITORS();
     if (type === 'resolution') return GENERATE_RESOLUTION_METRICS();
     return [];
-  }, [drillDownInfo]);
+  }, [drillDownInfo, activeSite]);
 
   // Generate structured category breakdown for charts
   const chartDataset = useMemo(() => {
@@ -1154,13 +1209,32 @@ export default function DrillDownModal({
 
     // 3. ASSET PORTFOLIO
     if (type === 'assets') {
-      const items = (live?.category_breakdown && live.category_breakdown.length > 0)
-        ? live.category_breakdown.map((c, i) => ({
-            label: c.category,
-            value: c.total,
+      const isSpecificSite = activeSite && activeSite !== 'All Sites';
+      let items = [];
+      if (live?.category_breakdown && live.category_breakdown.length > 0) {
+        items = live.category_breakdown.map((c, i) => ({
+          label: c.category || c.name,
+          value: Number(c.total) || 0,
+          color: PALETTE[i % PALETTE.length]
+        })).filter(it => it.value > 0);
+      }
+
+      if (items.length === 0) {
+        if (live?.total === 0) {
+          items = [];
+        } else if (isSpecificSite) {
+          const catMap = {};
+          rawDataset.forEach(asset => {
+            const cat = asset.category || 'General';
+            catMap[cat] = (catMap[cat] || 0) + 1;
+          });
+          items = Object.keys(catMap).map((cat, i) => ({
+            label: cat,
+            value: catMap[cat],
             color: PALETTE[i % PALETTE.length]
-          }))
-        : [
+          }));
+        } else {
+          items = [
             { label: 'Uncategorized Equipment', value: 338, color: '#8B5CF6' },
             { label: 'Electrical Panels & DGs', value: 116, color: '#00E676' },
             { label: 'Water & Fire Pumps', value: 40, color: '#3B82F6' },
@@ -1168,13 +1242,15 @@ export default function DrillDownModal({
             { label: 'Plumbing & Drainage', value: 6, color: '#00B0FF' },
             { label: 'CCTV & Surveillance', value: 3, color: '#F59E0B' }
           ];
+        }
+      }
 
-      const total = live?.total ?? 516;
+      const total = live?.total ?? (isSpecificSite ? rawDataset.length : 516);
       const kpis = [
-        { label: 'Nationwide Assets', value: total, unit: 'Units', color: '#00E676' },
+        { label: isSpecificSite ? `${activeSite} Assets` : 'Nationwide Assets', value: total, unit: 'Units', color: '#00E676' },
         { label: 'Operational Health', value: live?.health_percentage ?? 97.9, unit: '%', isPct: true, color: '#00E676' },
-        { label: 'Active Operational', value: live?.operational ?? 505, unit: 'Units', color: '#10B981' },
-        { label: 'Breakdown Units', value: live?.maintenance ?? 11, unit: 'Alert', color: '#EF4444' }
+        { label: 'Active Operational', value: live?.operational ?? (total > 0 ? Math.max(0, total - (live?.maintenance ?? 0)) : 0), unit: 'Units', color: '#10B981' },
+        { label: 'Breakdown Units', value: live?.maintenance ?? 0, unit: 'Alert', color: '#EF4444' }
       ];
       return { items, total, kpis };
     }
@@ -1251,13 +1327,26 @@ export default function DrillDownModal({
     }
 
     return { items: [], total: 0, kpis: [] };
-  }, [drillDownInfo]);
+  }, [drillDownInfo, activeSite, rawDataset]);
 
   // Filtered dataset for table
   const filteredDataset = useMemo(() => {
     let result = rawDataset;
 
-    // Filter by selected chart category if user clicked on a category in the chart
+    // 1. Strict site filtering if a specific site is selected
+    if (activeSite && activeSite !== 'All Sites') {
+      const targetSite = activeSite.toLowerCase().trim();
+      result = result.filter((item) => {
+        const itemSite = String(item.site || item.park || item.city || '').toLowerCase().trim();
+        return (
+          itemSite === targetSite ||
+          itemSite.includes(targetSite) ||
+          targetSite.includes(itemSite)
+        );
+      });
+    }
+
+    // 2. Filter by selected chart category if user clicked on a category in the chart
     if (selectedChartItem) {
       const cat = selectedChartItem.label.toLowerCase();
       result = result.filter(item => {
@@ -1270,6 +1359,7 @@ export default function DrillDownModal({
       });
     }
 
+    // 3. Tab filter (ALL, OPERATIONAL, BREAKDOWN, etc.)
     if (activeTab !== 'ALL') {
       result = result.filter((item) => {
         return (
@@ -1280,6 +1370,7 @@ export default function DrillDownModal({
       });
     }
 
+    // 4. Search query filter
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       result = result.filter((item) => {
@@ -1290,7 +1381,7 @@ export default function DrillDownModal({
     }
 
     return result;
-  }, [rawDataset, selectedChartItem, activeTab, searchTerm]);
+  }, [rawDataset, activeSite, selectedChartItem, activeTab, searchTerm]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredDataset.length / itemsPerPage) || 1;
@@ -1325,20 +1416,116 @@ export default function DrillDownModal({
     }
   };
 
-  // CSV Export utility
+  // CSV Export utility: clean professional headers & values for Excel
   const handleExportCSV = () => {
-    if (filteredDataset.length === 0) return;
-    const keys = Object.keys(filteredDataset[0]);
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [keys.join(','), ...filteredDataset.map((row) => keys.map((k) => `"${row[k] || ''}"`).join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const isSpecificSite = activeSite && activeSite !== 'All Sites';
+    const siteSlug = isSpecificSite ? activeSite.replace(/[^a-zA-Z0-9]/g, '_') : 'Nationwide';
+    const typeSlug = drillDownInfo?.type || 'telemetry';
+    const fileName = `${typeSlug}_${siteSlug}_records.csv`;
+
+    let headers = [];
+    let rows = [];
+
+    if (typeSlug === 'assets') {
+      headers = [
+        'Identifier',
+        'Title / Description',
+        'Category / Role',
+        'Park Location',
+        'Status',
+        'Operational Health (%)',
+        'Priority',
+        'Assigned Technician / Lead'
+      ];
+      rows = filteredDataset.map((item) => [
+        item.id || '',
+        item.name || item.title || '',
+        item.category || 'General',
+        item.site || activeSite || '',
+        item.status || '',
+        item.health !== undefined ? `${item.health}%` : '',
+        item.priority || 'Normal',
+        item.technician || 'Operations Team'
+      ]);
+    } else if (typeSlug === 'servicedesk') {
+      headers = [
+        'Identifier',
+        'Title / Description',
+        'Category / Role',
+        'Park Location',
+        'Status',
+        'Priority',
+        'SLA Status',
+        'Assigned Technician / Lead'
+      ];
+      rows = filteredDataset.map((item) => [
+        item.id || '',
+        item.title || item.name || '',
+        item.category || 'General',
+        item.site || activeSite || 'Horizon Parks',
+        item.status || '',
+        item.priority || 'Normal',
+        item.sla || '',
+        item.assignedTo || item.technician || 'Helpdesk'
+      ]);
+    } else if (typeSlug === 'ppm') {
+      headers = [
+        'Identifier',
+        'Maintenance Task',
+        'Equipment Classification',
+        'Park Location',
+        'Status',
+        'Compliance',
+        'Due Date',
+        'Completed Date',
+        'Lead Technician'
+      ];
+      rows = filteredDataset.map((item) => [
+        item.id || '',
+        item.name || '',
+        item.category || '',
+        item.site || activeSite || '',
+        item.status || '',
+        item.compliance || '',
+        item.dueDate || '',
+        item.completedDate || '',
+        item.technician || ''
+      ]);
+    } else {
+      if (filteredDataset.length > 0) {
+        const rawKeys = Object.keys(filteredDataset[0]);
+        headers = rawKeys.map((k) => k.charAt(0).toUpperCase() + k.slice(1));
+        rows = filteredDataset.map((item) => rawKeys.map((k) => item[k] ?? ''));
+      } else {
+        headers = ['Identifier', 'Title', 'Category', 'Park Location', 'Status'];
+        rows = [];
+      }
+    }
+
+    const escapeCsv = (val) => {
+      const str = String(val ?? '');
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const csvLines = [
+      headers.map(escapeCsv).join(','),
+      ...rows.map((row) => row.map(escapeCsv).join(','))
+    ];
+
+    // Prepend UTF-8 BOM (\uFEFF) so Excel on Windows recognizes UTF-8 properly
+    const csvContent = '\uFEFF' + csvLines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${drillDownInfo.type}_drilldown.csv`);
+    link.href = url;
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // PDF Export utility: Creates high-fidelity printable document with Save as PDF dialog
@@ -1352,7 +1539,9 @@ export default function DrillDownModal({
       hour: '2-digit',
       minute: '2-digit'
     });
-    const activePeriod = 'Filtered telemetry across 21 Nationwide Horizon Parks • Current Active Period';
+    const activePeriod = activeSite && activeSite !== 'All Sites'
+      ? `Telemetry scoped to ${activeSite} • Current Active Period`
+      : 'Filtered telemetry across 21 Nationwide Horizon Parks • Current Active Period';
 
     // Respect active category search filter if set, otherwise export all available categories
     let exportItems = chartDataset.items;
@@ -2141,7 +2330,11 @@ export default function DrillDownModal({
               }}
             >
               <span>
-                Filtered telemetry across <strong>21 Nationwide Horizon Parks</strong> for the current active period.
+                {activeSite && activeSite !== 'All Sites' ? (
+                  <>Telemetry scoped to <strong>{activeSite}</strong> for the current active period.</>
+                ) : (
+                  <>Filtered telemetry across <strong>21 Nationwide Horizon Parks</strong> for the current active period.</>
+                )}
               </span>
               <span style={{ color: getAccentColor(), fontWeight: 700 }}>
                 ● Real-time Synced
@@ -2255,9 +2448,13 @@ export default function DrillDownModal({
                   }}
                 >
                   <CheckCircle2 size={36} color="#00C853" style={{ marginBottom: '10px', opacity: 0.8 }} />
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>No records found</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                    {activeSite !== 'All Sites' ? `No asset records found for ${activeSite}` : 'No records found'}
+                  </div>
                   <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>
-                    Try adjusting your search criteria or tab filters
+                    {activeSite !== 'All Sites'
+                      ? `This site currently has 0 recorded units under this status filter.`
+                      : 'Try adjusting your search criteria or tab filters'}
                   </div>
                 </div>
               ) : (
