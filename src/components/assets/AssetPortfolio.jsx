@@ -15,7 +15,8 @@ export default function AssetPortfolio({
   selectedSite = 'All Sites',
   onSiteSelect,
   sites = [],
-  selectedCategory = 'All Categories'
+  selectedCategory = 'All Categories',
+  onDrillDown
 }) {
   const isLight = theme === 'light';
 
@@ -212,14 +213,17 @@ export default function AssetPortfolio({
           </div>
         </div>
 
-        {/* Site Filter Dropdown */}
-        <SiteFilterDropdown
-          selectedSite={selectedSite}
-          onSiteSelect={onSiteSelect}
-          sites={sites}
-          isLight={isLight}
-          accentColor="#10B981"
-        />
+        {/* Controls Container */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Site Filter Dropdown */}
+          <SiteFilterDropdown
+            selectedSite={selectedSite}
+            onSiteSelect={onSiteSelect}
+            sites={sites}
+            isLight={isLight}
+            accentColor="#10B981"
+          />
+        </div>
       </div>
 
       {/* 3-Column Chart Cards Grid */}
@@ -236,6 +240,8 @@ export default function AssetPortfolio({
         {/* ================================================================= */}
         <div
           className="glass-card"
+          onClick={() => onDrillDown && onDrillDown()}
+          title="Click chart to open Asset Portfolio & Health drill-down"
           style={{
             padding: '20px',
             borderRadius: '12px',
@@ -244,7 +250,21 @@ export default function AssetPortfolio({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            minHeight: '340px'
+            minHeight: '340px',
+            cursor: onDrillDown ? 'pointer' : 'default',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (onDrillDown) {
+              e.currentTarget.style.borderColor = isLight ? '#10B981' : 'rgba(16, 185, 129, 0.4)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onDrillDown) {
+              e.currentTarget.style.borderColor = isLight ? '#E2E8F0' : 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.transform = 'none';
+            }
           }}
         >
           {/* Header */}
@@ -260,13 +280,15 @@ export default function AssetPortfolio({
             >
               STATUS DISTRIBUTION
             </span>
-            <ChartDropdown
-              selectedType={statusChartType}
-              onChange={setStatusChartType}
-              types={CHART_COMPATIBILITY.statusDistribution}
-              isLight={isLight}
-              accentColor="#10B981"
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <ChartDropdown
+                selectedType={statusChartType}
+                onChange={setStatusChartType}
+                types={CHART_COMPATIBILITY.statusDistribution}
+                isLight={isLight}
+                accentColor="#10B981"
+              />
+            </div>
           </div>
 
           {/* Plot Area */}
@@ -294,7 +316,14 @@ export default function AssetPortfolio({
             }}
           >
             {/* Operational */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onDrillDown && onDrillDown({ segment: 'Operational', tab: 'OPERATIONAL' });
+              }}
+              title="Click to view Operational assets"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem', cursor: 'pointer' }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981' }} />
                 <span style={{ color: isLight ? '#64748B' : '#94A3B8' }}>Operational</span>
@@ -303,7 +332,14 @@ export default function AssetPortfolio({
             </div>
 
             {/* BreakDown */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onDrillDown && onDrillDown({ segment: 'BreakDown', tab: 'BREAKDOWN' });
+              }}
+              title="Click to view Breakdown assets"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem', cursor: 'pointer' }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#F59E0B' }} />
                 <span style={{ color: isLight ? '#64748B' : '#94A3B8' }}>BreakDown</span>
@@ -312,7 +348,14 @@ export default function AssetPortfolio({
             </div>
 
             {/* Critical */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onDrillDown && onDrillDown({ segment: 'Critical', tab: 'ALL' });
+              }}
+              title="Click to view Critical assets"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8125rem', cursor: 'pointer' }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
                 <span style={{ color: isLight ? '#64748B' : '#94A3B8' }}>Critical</span>
@@ -327,6 +370,8 @@ export default function AssetPortfolio({
         {/* ================================================================= */}
         <div
           className="glass-card"
+          onClick={() => onDrillDown && onDrillDown()}
+          title="Click chart to open Asset Portfolio & Health drill-down"
           style={{
             padding: '20px',
             borderRadius: '12px',
@@ -335,7 +380,21 @@ export default function AssetPortfolio({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            minHeight: '340px'
+            minHeight: '340px',
+            cursor: onDrillDown ? 'pointer' : 'default',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (onDrillDown) {
+              e.currentTarget.style.borderColor = isLight ? '#7C3AED' : 'rgba(124, 58, 237, 0.4)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onDrillDown) {
+              e.currentTarget.style.borderColor = isLight ? '#E2E8F0' : 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.transform = 'none';
+            }
           }}
         >
           {/* Header */}
@@ -351,7 +410,7 @@ export default function AssetPortfolio({
             >
               CATEGORY PERFORMANCE
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
               <ChartDropdown
                 selectedType={categoryChartType}
                 onChange={setCategoryChartType}
@@ -391,6 +450,8 @@ export default function AssetPortfolio({
         {/* ================================================================= */}
         <div
           className="glass-card"
+          onClick={() => onDrillDown && onDrillDown({ segment: 'BreakDown', tab: 'BREAKDOWN' })}
+          title="Click to open Asset Portfolio & Health breakdown drill-down"
           style={{
             padding: '20px',
             borderRadius: '12px',
@@ -399,7 +460,21 @@ export default function AssetPortfolio({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            minHeight: '340px'
+            minHeight: '340px',
+            cursor: onDrillDown ? 'pointer' : 'default',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (onDrillDown) {
+              e.currentTarget.style.borderColor = isLight ? '#EF4444' : 'rgba(239, 68, 68, 0.4)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onDrillDown) {
+              e.currentTarget.style.borderColor = isLight ? '#E2E8F0' : 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.transform = 'none';
+            }
           }}
         >
           {/* Header */}

@@ -33,7 +33,8 @@ export default function PpmOperations({
   selectedCategory = 'All Categories',
   selectedSite = 'All Sites',
   onSiteSelect,
-  sites = []
+  sites = [],
+  onDrillDown
 }) {
   // Service selection: 'ppm' or 'softServices'
   const [activeService, setActiveService] = useState('ppm'); // 'ppm' | 'softServices'
@@ -1407,7 +1408,10 @@ export default function PpmOperations({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Card 1: PPM Compliance */}
           <div
-            onClick={() => setActiveService('ppm')}
+            onClick={() => {
+              setActiveService('ppm');
+              onDrillDown && onDrillDown({ service: 'ppm', tab: 'ALL' });
+            }}
             className="glass-card glass-card-lift"
             style={{
               padding: '18px 20px',
@@ -1427,6 +1431,7 @@ export default function PpmOperations({
                 ? (activeService === 'ppm' ? '#FFFFFF' : '#FAFAFA')
                 : (activeService === 'ppm' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.02)')
             }}
+            title="Click to view detailed PPM drill-down"
           >
             {/* Header + Dropdown */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -1441,13 +1446,15 @@ export default function PpmOperations({
                 )}
               </div>
 
-              <ChartDropdown
-                selectedType={ppmChartType}
-                onChange={setPpmChartType}
-                types={COMPLIANCE_CHART_TYPES}
-                isLight={isLight}
-                accentColor="#00C853"
-              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <ChartDropdown
+                  selectedType={ppmChartType}
+                  onChange={setPpmChartType}
+                  types={COMPLIANCE_CHART_TYPES}
+                  isLight={isLight}
+                  accentColor="#00C853"
+                />
+              </div>
             </div>
 
             {/* Donut Chart Visual */}
@@ -1482,7 +1489,10 @@ export default function PpmOperations({
 
           {/* Card 2: Soft Services */}
           <div
-            onClick={() => setActiveService('softServices')}
+            onClick={() => {
+              setActiveService('softServices');
+              onDrillDown && onDrillDown({ service: 'softServices', tab: 'ALL' });
+            }}
             className="glass-card glass-card-lift"
             style={{
               padding: '18px 20px',
@@ -1502,6 +1512,7 @@ export default function PpmOperations({
                 ? (activeService === 'softServices' ? '#FFFFFF' : '#FAFAFA')
                 : (activeService === 'softServices' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.02)')
             }}
+            title="Click to view detailed Soft Services drill-down"
           >
             {/* Header + Dropdown */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -1516,13 +1527,15 @@ export default function PpmOperations({
                 )}
               </div>
 
-              <ChartDropdown
-                selectedType={softChartType}
-                onChange={setSoftChartType}
-                types={COMPLIANCE_CHART_TYPES}
-                isLight={isLight}
-                accentColor="#00C853"
-              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <ChartDropdown
+                  selectedType={softChartType}
+                  onChange={setSoftChartType}
+                  types={COMPLIANCE_CHART_TYPES}
+                  isLight={isLight}
+                  accentColor="#00C853"
+                />
+              </div>
             </div>
 
             {/* Donut Chart Visual */}
@@ -1558,6 +1571,7 @@ export default function PpmOperations({
 
         {/* COLUMN 2: PLANNED VS ACHIEVED BY CATEGORY (FULL HEIGHT MATCHING STACKED COL 1) */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ service: activeService, tab: 'ALL' })}
           className="glass-card glass-card-lift"
           style={{
             padding: '20px 22px',
@@ -1566,8 +1580,10 @@ export default function PpmOperations({
             justifyContent: 'space-between',
             borderRadius: '16px',
             height: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            cursor: 'pointer'
           }}
+          title="Click to view Planned vs Achieved drill-down"
         >
           {/* Header + Dropdown */}
           <ChartHeader
@@ -1576,7 +1592,10 @@ export default function PpmOperations({
             badgeText={activeService === 'ppm' ? 'PPM' : 'Soft Services'}
             badgeColor="#00C853"
             rightAction={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
                 <ChartDropdown
                   selectedType={plannedChartType}
                   onChange={setUserSelectedPlannedChart}
@@ -1606,6 +1625,7 @@ export default function PpmOperations({
 
         {/* COLUMN 3: COMPLIANCE BY CATEGORY (FULL HEIGHT MATCHING STACKED COL 1) */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ service: activeService, tab: 'ALL' })}
           className="glass-card glass-card-lift"
           style={{
             padding: '20px 22px',
@@ -1614,8 +1634,10 @@ export default function PpmOperations({
             justifyContent: 'space-between',
             borderRadius: '16px',
             height: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            cursor: 'pointer'
           }}
+          title="Click to view Category Compliance drill-down"
         >
           {/* Header */}
           <ChartHeader

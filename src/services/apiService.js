@@ -101,12 +101,12 @@ export function normalizeAssetPortfolio(apiData = DEFAULT_ASSET_PORTFOLIO_RESPON
   };
 }
 
-export async function fetchAssetPortfolio({
-  role = 'ceo',
-  siteId = null,
-  fromDate = '2026-09-01T00:00:00',
-  toDate = '2026-09-30T23:59:59'
-} = {}) {
+export async function fetchAssetPortfolio(options = {}) {
+  const role = options.role || 'ceo';
+  const siteId = options.siteId !== undefined ? options.siteId : (options.site_id !== undefined ? options.site_id : null);
+  const fromDate = options.fromDate || options.from_date || '2026-10-01T00:00:00';
+  const toDate = options.toDate || options.to_date || '2026-10-31T23:59:59';
+
   try {
     const params = new URLSearchParams({ role, from_date: fromDate, to_date: toDate });
     if (siteId !== null && siteId !== undefined) {
@@ -550,10 +550,10 @@ export const DEFAULT_GROUPED_DASHBOARD_RESPONSE = {
   },
   visitors_today: {
     summary: {
-      checked_in: 12567,
+      checked_in: 10151,
       prev_checked_in: 0,
-      checked_out: 11215,
-      currently_inside: 1352,
+      checked_out: 9244,
+      currently_inside: 907,
       vs_yesterday: null
     }
   },
@@ -726,31 +726,201 @@ export async function fetchGroupedDashboard({
 }
 
 /* =========================================================================
-   6. ORG ASSOCIATES (Vendors & Companies)
+   6. UNIFIED PARAMETER BUILDER & HTTP CLIENT
+   Matching authoritative types from groupedDashboard API
    ========================================================================= */
 
-export async function fetchOrgAssociates({
-  companyId = 84
-} = {}) {
-  try {
-    const res = await fetch(`${API_BASE}/org_associates.json?company_id=${companyId}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Authorization': AUTH_TOKEN
-      }
-    });
+export function buildParams(params = {}) {
+  const query = {};
 
-    if (!res.ok) {
-      console.warn(`Org Associates API status ${res.status}`);
-      return null;
+  if (params.site_id != null) {
+    query['site_id'] = String(params.site_id);
+  }
+  if (params.site_ids?.length) {
+    query['site_ids[]'] = params.site_ids.map(String);
+  }
+  if (params.company_id != null) {
+    query['company_id'] = String(params.company_id);
+  }
+  if (params.category_id != null) {
+    query['category_id'] = String(params.category_id);
+  }
+  if (params.vendor_id != null) {
+    query['vendor_id'] = String(params.vendor_id);
+  }
+  if (params.role) {
+    query['role'] = params.role;
+  }
+  if (params.from_date) {
+    query['from_date'] = params.from_date;
+  }
+  if (params.to_date) {
+    query['to_date'] = params.to_date;
+  }
+
+  // Support camelCase aliases passed from existing callers
+  if (params.siteId != null && query['site_id'] == null) {
+    query['site_id'] = String(params.siteId);
+  }
+  if (params.fromDate && query['from_date'] == null) {
+    query['from_date'] = params.fromDate;
+  }
+  if (params.toDate && query['to_date'] == null) {
+    query['to_date'] = params.toDate;
+  }
+  if (params.companyId != null && query['company_id'] == null) {
+    query['company_id'] = String(params.companyId);
+  }
+
+  return query;
+}
+
+export async function apiGet(endpoint, params = {}) {
+  const queryParams = buildParams(params);
+  const search = new URLSearchParams();
+
+  Object.entries(queryParams).forEach(([k, v]) => {
+    if (Array.isArray(v)) {
+      v.forEach((item) => search.append(k, item));
+    } else if (v != null) {
+      search.append(k, v);
     }
+  });
 
-    const data = await res.json();
-    return data;
+  // Drilldown / filter specific params
+  ['status', 'category', 'vendor', 'work_type', 'attendance'].forEach((k) => {
+    if (params[k] != null && !search.has(k)) {
+      search.append(k, String(params[k]));
+    }
+  });
+
+  const qStr = search.toString();
+  const url = `${API_BASE}${endpoint}${qStr ? `?${qStr}` : ''}`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json, text/plain, */*',
+      Authorization: AUTH_TOKEN
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  }
+
+  return await res.json();
+}
+
+/* =========================================================================
+   7. LIVE DASHBOARD API METHODS
+   ========================================================================= */
+
+// 1. Org Associates (Vendors, Categories, Sites, Companies)
+export async function fetchOrgAssociates(companyIdOrParams = 84) {
+  try {
+    const companyId = typeof companyIdOrParams === 'object' 
+      ? (companyIdOrParams.company_id || companyIdOrParams.companyId || 84)
+      : (companyIdOrParams || 84);
+
+    return await apiGet('/org_associates.json', { company_id: companyId });
   } catch (err) {
     console.warn('Error fetching org associates:', err);
     return null;
   }
 }
+
+// 2. Dashboard KPIs (Grouped Dashboard Core Metrics)
+export async function fetchDashboardKPIs(params = {}) {
+  try {
+    return await apiGet('.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Dashboard KPIs error, fallback:', err);
+    return DEFAULT_GROUPED_DASHBOARD_RESPONSE;
+  }
+}
+
+// 3. Site Performance (21 Real Nationwide Sites with Live Scores)
+export async function fetchSitePerformance(params = {}) {
+  try {
+    return await apiGet('/site_performance.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Site performance error, fallback:', err);
+    return { total_sites: 21, sites: [] };
+  }
+}
+
+// 4. Site Drill (Per-site deep dive)
+export async function fetchSiteDrill(params = {}) {
+  try {
+    return await apiGet('/site_drill.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Site drill error:', err);
+    return null;
+  }
+}
+
+// 5. Asset Drill (Live asset records for itemized table & CSV export)
+export async function fetchAssetDrill(params = {}) {
+  try {
+    return await apiGet('/asset_drill.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Asset drill error:', err);
+    return { records: [], total: 0 };
+  }
+}
+
+// 6. Workforce Drill
+export async function fetchWorkforceDrill(params = {}) {
+  try {
+    return await apiGet('/workforce_drill.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Workforce drill error:', err);
+    return { records: [], total: 0 };
+  }
+}
+
+// 7. PPM Drill
+export async function fetchPPMDrill(params = {}) {
+  try {
+    return await apiGet('/ppm_drill.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('PPM drill error:', err);
+    return { records: [], total: 0 };
+  }
+}
+
+// 8. Compliance
+export async function fetchCompliance(params = {}) {
+  try {
+    return await apiGet('/compliance.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Compliance error:', err);
+    return null;
+  }
+}
+
+// 9. Visitors Detail
+export async function fetchVisitorsDetail(params = {}) {
+  try {
+    return await apiGet('/visitors_detail.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Visitors detail error:', err);
+    return null;
+  }
+}
+
+// 10. Visitors Drill
+export async function fetchVisitorsDrill(params = {}) {
+  try {
+    return await apiGet('/visitors_drill.json', { role: 'ceo', ...params });
+  } catch (err) {
+    console.warn('Visitors drill error:', err);
+    return { records: [], total: 0 };
+  }
+}
+
+// Aliases for seamless backward compatibility
+export const fetchPPMOperations = fetchPpmOperations;
+
 

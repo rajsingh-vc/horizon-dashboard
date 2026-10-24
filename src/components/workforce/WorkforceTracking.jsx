@@ -23,7 +23,8 @@ export default function WorkforceTracking({
   selectedSite = 'All Sites',
   onSiteSelect,
   sites = [],
-  selectedVendor = 'All Vendors'
+  selectedVendor = 'All Vendors',
+  onDrillDown
 }) {
   const isLight = theme === 'light';
 
@@ -843,6 +844,7 @@ export default function WorkforceTracking({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
           {/* Top Block: Overall Availability */}
           <div
+            onClick={() => onDrillDown && onDrillDown({ tab: 'ALL' })}
             style={{
               backgroundColor: cardBg,
               border: `1px solid ${cardBorder}`,
@@ -852,8 +854,11 @@ export default function WorkforceTracking({
               flex: '1.2 1 0',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
             }}
+            title="Click to inspect workforce availability"
           >
             <div style={{ fontSize: '0.8125rem', color: textMuted, fontWeight: 500, marginBottom: '8px' }}>
               Overall Availability
@@ -885,6 +890,7 @@ export default function WorkforceTracking({
           {/* Middle Row: Present & Absent side-by-side */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flex: '1 1 0' }}>
             <div
+              onClick={() => onDrillDown && onDrillDown({ tab: 'PRESENT' })}
               style={{
                 backgroundColor: isLight ? '#F0FDF4' : 'rgba(16, 185, 129, 0.1)',
                 border: isLight ? '1px solid #DCFCE7' : '1px solid rgba(16, 185, 129, 0.25)',
@@ -892,8 +898,11 @@ export default function WorkforceTracking({
                 padding: '16px 14px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
               }}
+              title="Click to inspect present personnel"
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16A34A', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '6px' }}>
                 <UserCheck size={15} />
@@ -905,6 +914,7 @@ export default function WorkforceTracking({
             </div>
 
             <div
+              onClick={() => onDrillDown && onDrillDown({ tab: 'ABSENT' })}
               style={{
                 backgroundColor: isLight ? '#FEF2F2' : 'rgba(239, 68, 68, 0.1)',
                 border: isLight ? '1px solid #FEE2E2' : '1px solid rgba(239, 68, 68, 0.25)',
@@ -912,8 +922,11 @@ export default function WorkforceTracking({
                 padding: '16px 14px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
               }}
+              title="Click to inspect absent personnel"
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EF4444', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '6px' }}>
                 <UserX size={15} />
@@ -927,6 +940,7 @@ export default function WorkforceTracking({
 
           {/* Bottom Block: Total Workforce */}
           <div
+            onClick={() => onDrillDown && onDrillDown({ tab: 'ALL' })}
             style={{
               backgroundColor: isLight ? '#F8FAFC' : 'rgba(255, 255, 255, 0.03)',
               border: `1px solid ${cardBorder}`,
@@ -936,8 +950,11 @@ export default function WorkforceTracking({
               flex: '1 1 0',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
             }}
+            title="Click to inspect all staff records"
           >
             <div style={{ fontSize: '0.8125rem', color: textMuted, fontWeight: 500, marginBottom: '6px' }}>
               Total Workforce
@@ -950,6 +967,7 @@ export default function WorkforceTracking({
 
         {/* COLUMN 2: BY VENDOR */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ tab: 'ALL', segment: 'Vendor' })}
           style={{
             backgroundColor: cardBg,
             border: `1px solid ${cardBorder}`,
@@ -960,8 +978,10 @@ export default function WorkforceTracking({
             flexDirection: 'column',
             justifyContent: 'space-between',
             height: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            cursor: 'pointer'
           }}
+          title="Click to view contractor vendor drill-down"
         >
           <div>
             <div style={{ marginBottom: '14px' }}>
@@ -970,12 +990,14 @@ export default function WorkforceTracking({
                 subtitle="Present vs absent personnel telemetry across service contractor partners."
                 isLight={isLight}
                 rightAction={
-                  <ChartDropdown
-                    value={vendorChartType}
-                    options={CHART_TYPES}
-                    isLight={isLight}
-                    onChange={(type) => setVendorChartType(type)}
-                  />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <ChartDropdown
+                      value={vendorChartType}
+                      options={CHART_TYPES}
+                      isLight={isLight}
+                      onChange={(type) => setVendorChartType(type)}
+                    />
+                  </div>
                 }
               />
             </div>
@@ -987,6 +1009,7 @@ export default function WorkforceTracking({
 
         {/* COLUMN 3: BY WORK TYPE */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ tab: 'ALL', segment: 'WorkType' })}
           style={{
             backgroundColor: cardBg,
             border: `1px solid ${cardBorder}`,
@@ -997,8 +1020,10 @@ export default function WorkforceTracking({
             flexDirection: 'column',
             justifyContent: 'space-between',
             height: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            cursor: 'pointer'
           }}
+          title="Click to view work type discipline drill-down"
         >
           {/* Header row with chart selector */}
           <div style={{ marginBottom: '8px' }}>
@@ -1007,7 +1032,10 @@ export default function WorkforceTracking({
               subtitle="Staffing distribution across operational technical and security disciplines."
               isLight={isLight}
               rightAction={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div 
+                  onClick={(e) => e.stopPropagation()} 
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
                   <ChartDropdown
                     value={workTypeChartType}
                     options={CHART_TYPES}
@@ -1046,7 +1074,11 @@ export default function WorkforceTracking({
               return (
                 <div
                   key={idx}
-                  onClick={() => setSelectedWorkTypeIndex(isSelected ? null : idx)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedWorkTypeIndex(isSelected ? null : idx);
+                    onDrillDown && onDrillDown({ tab: 'ALL', segment: wt.type, workType: wt.type });
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1094,6 +1126,7 @@ export default function WorkforceTracking({
 
         {/* COLUMN 4: LOW AVAILABILITY VENDORS */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ tab: 'ABSENT', segment: 'LowAvailability' })}
           style={{
             backgroundColor: cardBg,
             border: `1px solid ${cardBorder}`,
@@ -1103,8 +1136,10 @@ export default function WorkforceTracking({
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            cursor: 'pointer'
           }}
+          title="Click to inspect low availability contractor vendors"
         >
           <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', color: headerColor, marginBottom: '14px' }}>
             LOW AVAILABILITY VENDORS

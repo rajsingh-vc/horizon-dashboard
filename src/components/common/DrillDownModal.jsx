@@ -3,6 +3,17 @@ import { createPortal } from 'react-dom';
 import AnalyticsChartList from './AnalyticsChartList';
 import { formatCategoryLabel, formatPercentage, formatNumber } from '../../utils/analyticsFormatters';
 import { 
+  fetchVisitorsDetail, 
+  fetchVisitorsDrill, 
+  fetchAssetDrill, 
+  fetchAssetPortfolio,
+  fetchServiceDesk,
+  fetchPpmOperations,
+  fetchPPMDrill,
+  fetchWorkforce,
+  fetchWorkforceDrill
+} from '../../services/apiService';
+import { 
   X, 
   Search, 
   Download, 
@@ -41,17 +52,17 @@ const PALETTE = [
 
 const GENERATE_ASSETS = (activeSite = 'All Sites', liveData = null) => {
   const breakdownAssets = [
-    { id: 'AST-7701', name: 'DG AMF Synchronizing Panel 1', category: 'Electrical', site: 'Farukh Nagar 1', status: 'BreakDown', health: 45.0, priority: 'High', technician: 'Vijay Kumar (In-House)' },
-    { id: 'AST-7802', name: 'Fire Hydrant Booster Pump 2', category: 'Pump', site: 'Malur', status: 'BreakDown', health: 52.0, priority: 'High', technician: 'Ramesh Gowda (In-House)' },
-    { id: 'AST-7703', name: 'Main LT Incomer Air Circuit Breaker', category: 'Electrical', site: 'Farukh Nagar 1', status: 'BreakDown', health: 58.0, priority: 'Medium', technician: 'Vijay Kumar (In-House)' },
-    { id: 'AST-7804', name: 'STP Aeration Blower Motor', category: 'Pump', site: 'Malur', status: 'BreakDown', health: 60.0, priority: 'Medium', technician: 'Suresh Patil (In-House)' },
-    { id: 'AST-8605', name: 'Solar Grid Inverter 50kVA Unit B', category: 'Electrical', site: 'Bilaspur', status: 'BreakDown', health: 64.0, priority: 'Medium', technician: 'Amit Yadav (In-House)' },
-    { id: 'AST-7706', name: 'Step-Down Transformer Tap Changer', category: 'Electrical', site: 'Farukh Nagar 1', status: 'BreakDown', health: 62.0, priority: 'High', technician: 'Manoj Sharma (In-House)' },
-    { id: 'AST-7807', name: 'Perimeter CCTV NVR Server Rack', category: 'CCTV', site: 'Malur', status: 'BreakDown', health: 70.0, priority: 'Low', technician: 'Ramesh Gowda (In-House)' },
-    { id: 'AST-8608', name: 'Domestic Water Hydro-Pneumatic Pump', category: 'Pump', site: 'Bilaspur', status: 'BreakDown', health: 66.0, priority: 'Medium', technician: 'Amit Yadav (In-House)' },
-    { id: 'AST-7709', name: 'Storm Water Submersible Sump Pump', category: 'Plumbing', site: 'Farukh Nagar 1', status: 'BreakDown', health: 68.0, priority: 'Low', technician: 'Vijay Kumar (In-House)' },
-    { id: 'AST-7810', name: 'Yard High Mast Lighting Luminaire', category: 'Electrical', site: 'Malur', status: 'BreakDown', health: 71.0, priority: 'Low', technician: 'Suresh Patil (In-House)' },
-    { id: 'AST-7711', name: 'Main Gate Automatic Boom Barrier Actuator', category: 'Uncategorized', site: 'Farukh Nagar 1', status: 'BreakDown', health: 75.0, priority: 'Low', technician: 'Manoj Sharma (In-House)' }
+    { id: 'AST-4578', name: 'HIPPL_ Capex61-Tube Light', category: 'Uncategorized', site: 'Farukh Nagar 1', status: 'BreakDown', health: 48.0, priority: 'High', technician: 'OEM Breakdown Lead', location: 'J, Ground Floor' },
+    { id: 'AST-4573', name: 'HIPPL_ Capex28-Blower Heater', category: 'Uncategorized', site: 'Farukh Nagar 1', status: 'BreakDown', health: 50.0, priority: 'High', technician: 'Farukh Nagar FM Lead', location: 'Admin Block, Ground Floor' },
+    { id: 'AST-4630', name: 'HIPPL_UPS 8-UPS', category: 'Uncategorized', site: 'Farukh Nagar 1', status: 'BreakDown', health: 52.0, priority: 'High', technician: 'UPS Specialist', location: 'G, Ground Floor' },
+    { id: 'AST-4255', name: 'MLIPPL_EP1- Earth pit', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 55.0, priority: 'Medium', technician: 'Malur FM Tech', location: 'Admin-Block' },
+    { id: 'AST-4256', name: 'MLIPPL_EP2-Lightening arrestor', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 55.0, priority: 'Medium', technician: 'Malur FM Tech', location: 'Admin-Block' },
+    { id: 'AST-4244', name: 'MLIPPL_STP24-Flow meter, magnetic type', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 58.0, priority: 'Medium', technician: 'STP Operations Lead', location: 'Admin-Block' },
+    { id: 'AST-4245', name: 'MLIPPL_STP25-Level switches', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 60.0, priority: 'Medium', technician: 'Instrumentation Tech', location: 'Admin-Block' },
+    { id: 'AST-4252', name: 'MLIPPL_STP32-Sewage Air Blowers', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 62.0, priority: 'High', technician: 'Blower Overhaul Team', location: 'Admin-Block' },
+    { id: 'AST-4233', name: 'MLIPPL_STP13-Pressure Sand Filter', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 65.0, priority: 'Medium', technician: 'Filtration Specialist', location: 'Admin-Block' },
+    { id: 'AST-4236', name: 'MLIPPL_STP16-Biocask Reactor', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 64.0, priority: 'High', technician: 'Reactor Engineer', location: 'Admin-Block' },
+    { id: 'AST-4222', name: 'MLIPPL_STP2-Air Blower - 2', category: 'Uncategorized', site: 'Malur', status: 'BreakDown', health: 63.0, priority: 'High', technician: 'Air Systems Team', location: 'Admin-Block' }
   ];
 
   const operationalCategories = [
@@ -232,7 +243,7 @@ const GENERATE_AMC_CONTRACTS = () => {
 
 const GENERATE_VISITORS = () => {
   const visitors = [];
-  const companies = ['Amazon Logistics', 'Delhivery Express', 'Flipkart Supply Chain', 'DHL Global', 'Blinkit Hub', 'Blue Dart', 'Shadowfax', 'Ecom Express'];
+  const categories = ['Truck', 'Delivery', 'Government Official', 'Truck Unloading', 'Truck Loading', 'Guest', 'Vendor', 'Maintenance'];
   const parks = ['Farukh Nagar 1', 'Bilaspur', 'Malur', 'Farukh Nagar 2', 'Koka', 'Luhari', 'Chakan V', 'Verna, Goa'];
 
   for (let i = 1; i <= 32; i++) {
@@ -240,10 +251,10 @@ const GENERATE_VISITORS = () => {
     visitors.push({
       id: `VIS-2026-${1000 + i}`,
       name: `Visitor Pass Holder #${i}`,
-      category: isInside ? 'Active on Site' : 'Checked Out',
+      category: categories[i % categories.length],
       site: parks[i % parks.length],
       status: isInside ? 'Present' : 'Completed',
-      workType: companies[i % companies.length],
+      workType: categories[i % categories.length],
       checkInTime: `Today, 0${8 + (i % 4)}:${(i * 7) % 60 < 10 ? '0' : ''}${(i * 7) % 60} AM`,
       resolvedAt: isInside ? 'Currently Inside' : `Today, 0${10 + (i % 2)}:${(i * 5) % 60} AM`
     });
@@ -272,30 +283,40 @@ const HorizontalBarChart = AnalyticsChartList;
    CHART 2: VERTICAL COLUMN / BAR CHART
    ========================================================================= */
 function VerticalColumnChart({ data, isLight, selectedItem, onSelectItem }) {
-  const displayItems = data.slice(0, 10);
-  const maxVal = Math.max(...displayItems.map(d => d.value), 1);
-  const chartHeight = 220;
+  // Clean, filter out single-char noise / pure numbers, and sort descending
+  const validItems = useMemo(() => {
+    return data
+      .filter((d) => d && d.label && String(d.label).trim().length > 1 && !/^\d+$/.test(String(d.label).trim()))
+      .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
+  }, [data]);
+
+  const displayItems = validItems.slice(0, 8);
+  const totalSum = useMemo(() => displayItems.reduce((acc, it) => acc + (Number(it.value) || 0), 0), [displayItems]);
+  const maxVal = Math.max(...displayItems.map(d => Number(d.value) || 0), 1);
+  const [hoveredItem, setHoveredItem] = useState(null);
 
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: isLight ? '#64748B' : '#94A3B8' }}>
-          Top 10 Operational Categories (Scaled for optimal clarity)
+        <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: isLight ? '#1E293B' : '#F1F5F9' }}>
+          Operational Category Distribution (Ranked by Total Volume)
         </span>
-        <span style={{ fontSize: '0.6875rem', color: isLight ? '#94A3B8' : '#64748B' }}>
+        <span style={{ fontSize: '0.6875rem', fontWeight: 500, color: isLight ? '#64748B' : '#94A3B8' }}>
           Click column to inspect
         </span>
       </div>
 
+      {/* Chart Bars Section */}
       <div
         style={{
-          height: `${chartHeight}px`,
+          height: '180px',
           display: 'flex',
           alignItems: 'flex-end',
           gap: '12px',
-          padding: '24px 10px 0 10px',
-          borderBottom: isLight ? '1px solid #CBD5E1' : '1px solid rgba(255, 255, 255, 0.15)',
-          position: 'relative'
+          padding: '16px 8px 0 8px',
+          borderBottom: isLight ? '2px solid #CBD5E1' : '1px solid rgba(255, 255, 255, 0.16)',
+          position: 'relative',
+          boxSizing: 'border-box'
         }}
       >
         {/* Background grid lines */}
@@ -315,14 +336,18 @@ function VerticalColumnChart({ data, isLight, selectedItem, onSelectItem }) {
 
         {displayItems.map((item, idx) => {
           const isSelected = selectedItem?.label === item.label;
-          const heightPct = Math.max(Math.round(Math.pow(item.value / maxVal, 0.45) * 88), 16);
+          const isHovered = hoveredItem?.label === item.label;
+          const pctOfTotal = totalSum > 0 ? ((item.value / totalSum) * 100).toFixed(1) : '0';
+          const heightPct = Math.max(Math.round(Math.pow(item.value / maxVal, 0.42) * 82), 16);
           const color = item.color || PALETTE[idx % PALETTE.length];
 
           return (
             <div
               key={item.label || idx}
+              onMouseEnter={() => setHoveredItem(item)}
+              onMouseLeave={() => setHoveredItem(null)}
               onClick={() => onSelectItem && onSelectItem(isSelected ? null : item)}
-              title={`${formatCategoryLabel(item.label)}: ${formatNumber(item.value)}`}
+              title={`${formatCategoryLabel(item.label)}: ${formatNumber(item.value)} passes (${pctOfTotal}%)`}
               style={{
                 flex: 1,
                 display: 'flex',
@@ -331,32 +356,62 @@ function VerticalColumnChart({ data, isLight, selectedItem, onSelectItem }) {
                 height: '100%',
                 justifyContent: 'flex-end',
                 cursor: 'pointer',
-                position: 'relative'
+                position: 'relative',
+                transition: 'transform 0.15s ease',
+                transform: isHovered || isSelected ? 'scale(1.03)' : 'scale(1)'
               }}
             >
-              <span
+              {/* Metric Value & Percentage Badge on Top of Column */}
+              <div
                 style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  color: isSelected ? color : (isLight ? '#0F172A' : '#FFFFFF'),
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
                   marginBottom: '6px',
-                  fontFamily: 'monospace'
+                  gap: '2px'
                 }}
               >
-                {formatNumber(item.value)}
-              </span>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    color: isSelected || isHovered ? color : (isLight ? '#0F172A' : '#FFFFFF'),
+                    fontFamily: 'monospace',
+                    letterSpacing: '-0.02em'
+                  }}
+                >
+                  {formatNumber(item.value)}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.625rem',
+                    fontWeight: 700,
+                    color: isLight ? '#64748B' : '#94A3B8',
+                    padding: '1px 4px',
+                    borderRadius: '4px',
+                    backgroundColor: isLight ? '#F1F5F9' : 'rgba(255, 255, 255, 0.08)'
+                  }}
+                >
+                  {pctOfTotal}%
+                </span>
+              </div>
 
+              {/* Vertical Column Bar */}
               <div
                 style={{
                   width: '100%',
-                  maxWidth: '44px',
+                  maxWidth: '52px',
                   height: `${heightPct}%`,
                   borderRadius: '6px 6px 0 0',
-                  background: `linear-gradient(180deg, ${color} 0%, ${color}77 100%)`,
-                  boxShadow: isSelected ? `0 0 16px ${color}AA` : `0 0 8px ${color}33`,
-                  border: isSelected ? `2px solid #FFFFFF` : `1px solid ${color}`,
+                  background: isSelected || isHovered
+                    ? `linear-gradient(180deg, ${color} 0%, ${color}CC 100%)`
+                    : `linear-gradient(180deg, ${color} 0%, ${color}77 100%)`,
+                  boxShadow: isSelected || isHovered
+                    ? `0 0 20px ${color}99, 0 4px 10px rgba(0,0,0,0.3)`
+                    : `0 0 8px ${color}33`,
+                  border: isSelected ? '2px solid #FFFFFF' : (isHovered ? `1.5px solid ${color}` : `1px solid ${color}88`),
                   borderBottom: 'none',
-                  transition: 'all 0.25s ease'
+                  transition: 'all 0.2s ease'
                 }}
               />
             </div>
@@ -364,28 +419,72 @@ function VerticalColumnChart({ data, isLight, selectedItem, onSelectItem }) {
         })}
       </div>
 
-      {/* X-Axis Category Labels */}
-      <div style={{ display: 'flex', gap: '12px', padding: '0 10px' }}>
-        {displayItems.map((item, idx) => (
-          <div
-            key={item.label || idx}
-            onClick={() => onSelectItem && onSelectItem(item)}
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              fontSize: '0.6875rem',
-              fontWeight: 600,
-              color: selectedItem?.label === item.label ? (isLight ? '#0F172A' : '#FFFFFF') : (isLight ? '#64748B' : '#94A3B8'),
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              cursor: 'pointer'
-            }}
-            title={formatCategoryLabel(item.label)}
-          >
-            {formatCategoryLabel(item.label)}
-          </div>
-        ))}
+      {/* X-Axis Category Badges - Dedicated generous height and distinct card look */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          padding: '6px 8px 2px 8px',
+          boxSizing: 'border-box'
+        }}
+      >
+        {displayItems.map((item, idx) => {
+          const isSelected = selectedItem?.label === item.label;
+          const isHovered = hoveredItem?.label === item.label;
+          const color = item.color || PALETTE[idx % PALETTE.length];
+          const labelText = formatCategoryLabel(item.label);
+
+          return (
+            <div
+              key={item.label || idx}
+              onMouseEnter={() => setHoveredItem(item)}
+              onMouseLeave={() => setHoveredItem(null)}
+              onClick={() => onSelectItem && onSelectItem(isSelected ? null : item)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                padding: '6px 4px',
+                borderRadius: '8px',
+                backgroundColor: isSelected
+                  ? `${color}25`
+                  : isHovered
+                  ? (isLight ? '#E2E8F0' : 'rgba(255, 255, 255, 0.08)')
+                  : (isLight ? '#F1F5F9' : 'rgba(255, 255, 255, 0.04)'),
+                border: isSelected
+                  ? `1.5px solid ${color}`
+                  : (isLight ? '1px solid #E2E8F0' : '1px solid rgba(255, 255, 255, 0.08)'),
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                minHeight: '44px',
+                boxSizing: 'border-box'
+              }}
+              title={labelText}
+            >
+              <span
+                style={{
+                  fontSize: '0.6875rem',
+                  fontWeight: isSelected || isHovered ? 700 : 600,
+                  color: isSelected
+                    ? (isLight ? '#0F172A' : '#FFFFFF')
+                    : (isLight ? '#334155' : '#E2E8F0'),
+                  lineHeight: '1.2',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {labelText}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1103,15 +1202,305 @@ export default function DrillDownModal({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  const [visitorsDetailData, setVisitorsDetailData] = useState(null);
+  const [visitorsDrillRecords, setVisitorsDrillRecords] = useState([]);
+  const [isLoadingVisitors, setIsLoadingVisitors] = useState(false);
+
+  const [assetDetailData, setAssetDetailData] = useState(null);
+  const [assetDrillRecords, setAssetDrillRecords] = useState([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+
+  // Fetch live asset portfolio and drill telemetry when modal opens for assets
+  useEffect(() => {
+    if (!isOpen || drillDownInfo?.type !== 'assets') return;
+    let isCancelled = false;
+
+    async function loadAssetsData() {
+      setIsLoadingAssets(true);
+      try {
+        const [portfolioRes, maintenanceDrillRes, allDrillRes] = await Promise.all([
+          fetchAssetPortfolio({
+            role: 'ceo',
+            siteId: drillDownInfo.siteId,
+            fromDate: drillDownInfo.fromDate,
+            toDate: drillDownInfo.toDate
+          }),
+          fetchAssetDrill({
+            role: 'ceo',
+            site_id: drillDownInfo.siteId,
+            from_date: drillDownInfo.fromDate,
+            to_date: drillDownInfo.toDate,
+            status: 'maintenance'
+          }),
+          fetchAssetDrill({
+            role: 'ceo',
+            site_id: drillDownInfo.siteId,
+            from_date: drillDownInfo.fromDate,
+            to_date: drillDownInfo.toDate
+          })
+        ]);
+
+        if (!isCancelled) {
+          if (portfolioRes) setAssetDetailData(portfolioRes);
+
+          const maintRecords = maintenanceDrillRes?.records || [];
+          const generalRecords = allDrillRes?.records || [];
+
+          const combined = [];
+          const seenIds = new Set();
+
+          // Prioritize maintenance (breakdown) records so they are prominent and accurately represented
+          maintRecords.forEach((item) => {
+            if (item && item.id && !seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              combined.push({ ...item, breakdown: true, status: 'maintenance' });
+            }
+          });
+
+          generalRecords.forEach((item) => {
+            if (item && item.id && !seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              combined.push(item);
+            }
+          });
+
+          if (combined.length > 0) {
+            setAssetDrillRecords(combined);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch asset modal telemetry:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingAssets(false);
+        }
+      }
+    }
+
+    loadAssetsData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, drillDownInfo]);
+
+  // Fetch live visitors telemetry when modal opens for visitors
+  useEffect(() => {
+    if (!isOpen || drillDownInfo?.type !== 'visitors') return;
+    let isCancelled = false;
+
+    async function loadVisitorsData() {
+      setIsLoadingVisitors(true);
+      try {
+        const [detailRes, drillRes] = await Promise.all([
+          fetchVisitorsDetail({
+            role: 'ceo',
+            site_id: drillDownInfo.siteId,
+            from_date: drillDownInfo.fromDate,
+            to_date: drillDownInfo.toDate
+          }),
+          fetchVisitorsDrill({
+            role: 'ceo',
+            site_id: drillDownInfo.siteId,
+            from_date: drillDownInfo.fromDate,
+            to_date: drillDownInfo.toDate
+          })
+        ]);
+
+        if (!isCancelled) {
+          if (detailRes) setVisitorsDetailData(detailRes);
+          if (drillRes?.records && Array.isArray(drillRes.records)) {
+            setVisitorsDrillRecords(drillRes.records);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch visitors modal telemetry:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingVisitors(false);
+        }
+      }
+    }
+
+    loadVisitorsData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, drillDownInfo]);
+
+  const [serviceDeskDetailData, setServiceDeskDetailData] = useState(null);
+  const [serviceDeskDrillRecords, setServiceDeskDrillRecords] = useState([]);
+  const [isLoadingServiceDesk, setIsLoadingServiceDesk] = useState(false);
+
+  const [ppmDetailData, setPpmDetailData] = useState(null);
+  const [ppmDrillRecords, setPpmDrillRecords] = useState([]);
+  const [isLoadingPpm, setIsLoadingPpm] = useState(false);
+
+  const [workforceDetailData, setWorkforceDetailData] = useState(null);
+  const [workforceDrillRecords, setWorkforceDrillRecords] = useState([]);
+  const [isLoadingWorkforce, setIsLoadingWorkforce] = useState(false);
+
+  // Fetch live Service Desk telemetry when modal opens for servicedesk
+  useEffect(() => {
+    if (!isOpen || drillDownInfo?.type !== 'servicedesk') return;
+    let isCancelled = false;
+
+    async function loadServiceDeskData() {
+      setIsLoadingServiceDesk(true);
+      try {
+        const res = await fetchServiceDesk({
+          role: 'ceo',
+          siteId: drillDownInfo.siteId,
+          fromDate: drillDownInfo.fromDate,
+          toDate: drillDownInfo.toDate
+        });
+
+        if (!isCancelled && res) {
+          setServiceDeskDetailData(res);
+          if (res.priorityTickets && Array.isArray(res.priorityTickets)) {
+            setServiceDeskDrillRecords(res.priorityTickets);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch service desk modal telemetry:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingServiceDesk(false);
+        }
+      }
+    }
+
+    loadServiceDeskData();
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, drillDownInfo]);
+
+  // Fetch live PPM & Soft Services telemetry and real task records when modal opens for ppm
+  useEffect(() => {
+    if (!isOpen || drillDownInfo?.type !== 'ppm') return;
+    let isCancelled = false;
+
+    async function loadPpmData() {
+      setIsLoadingPpm(true);
+      try {
+        const categoriesToFetch = drillDownInfo.category
+          ? [drillDownInfo.category]
+          : [
+              'MONTHLY CHECKLIST - PANEL',
+              'MONTHLY CHECKLIST - PUMPS',
+              'MONTHLY CHECKLIST - DG',
+              'MONTHLY CHECKLIST - TRANSFORMER',
+              'MONTHLY CHECKLIST - DG AMF PANEL'
+            ];
+
+        const [ppmRes, ...drillResults] = await Promise.all([
+          fetchPpmOperations({
+            role: 'ceo',
+            siteId: drillDownInfo.siteId,
+            fromDate: drillDownInfo.fromDate,
+            toDate: drillDownInfo.toDate
+          }),
+          ...categoriesToFetch.map((cat) =>
+            fetchPPMDrill({
+              role: 'ceo',
+              site_id: drillDownInfo.siteId,
+              from_date: drillDownInfo.fromDate,
+              to_date: drillDownInfo.toDate,
+              category: cat
+            })
+          )
+        ]);
+
+        if (!isCancelled) {
+          if (ppmRes) setPpmDetailData(ppmRes);
+
+          const combinedTasks = [];
+          const seenTaskIds = new Set();
+          drillResults.forEach((res) => {
+            if (res?.records && Array.isArray(res.records)) {
+              res.records.forEach((task) => {
+                if (task && task.id && !seenTaskIds.has(task.id)) {
+                  seenTaskIds.add(task.id);
+                  combinedTasks.push(task);
+                }
+              });
+            }
+          });
+
+          if (combinedTasks.length > 0) {
+            setPpmDrillRecords(combinedTasks);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch PPM modal telemetry:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingPpm(false);
+        }
+      }
+    }
+
+    loadPpmData();
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, drillDownInfo]);
+
+  // Fetch live Workforce telemetry and real employee attendance records when modal opens for workforce
+  useEffect(() => {
+    if (!isOpen || drillDownInfo?.type !== 'workforce') return;
+    let isCancelled = false;
+
+    async function loadWorkforceData() {
+      setIsLoadingWorkforce(true);
+      try {
+        const [wfRes, wfDrillRes] = await Promise.all([
+          fetchWorkforce({
+            role: 'ceo',
+            siteId: drillDownInfo.siteId,
+            fromDate: drillDownInfo.fromDate,
+            toDate: drillDownInfo.toDate
+          }),
+          fetchWorkforceDrill({
+            role: 'ceo',
+            site_id: drillDownInfo.siteId,
+            from_date: drillDownInfo.fromDate,
+            to_date: drillDownInfo.toDate
+          })
+        ]);
+
+        if (!isCancelled) {
+          if (wfRes) setWorkforceDetailData(wfRes);
+          if (wfDrillRes?.records && Array.isArray(wfDrillRes.records)) {
+            setWorkforceDrillRecords(wfDrillRes.records);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch workforce modal telemetry:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingWorkforce(false);
+        }
+      }
+    }
+
+    loadWorkforceData();
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, drillDownInfo]);
+
   // Reset page and mode when modal opens
   useEffect(() => {
     if (isOpen) {
-      setViewMode('CHARTS');
+      setViewMode(drillDownInfo?.initialViewMode || 'CHARTS');
       setChartType('HBAR');
       setSelectedChartItem(null);
       setChartCategorySearch('');
       setSearchTerm('');
-      setActiveTab('ALL');
+      setActiveTab(drillDownInfo?.initialTab || 'ALL');
       setCurrentPage(1);
       document.body.style.overflow = 'hidden';
     } else {
@@ -1138,76 +1527,328 @@ export default function DrillDownModal({
     if (!drillDownInfo) return [];
     const type = drillDownInfo.type;
 
-    if (type === 'assets') return GENERATE_ASSETS(activeSite, drillDownInfo.liveData);
-    if (type === 'servicedesk') return GENERATE_TICKETS();
-    if (type === 'ppm') return GENERATE_PPM_TASKS();
+    // 1. ASSETS
+    if (type === 'assets') {
+      if (assetDrillRecords && assetDrillRecords.length > 0) {
+        return assetDrillRecords.map((item) => {
+          const isBreakdown = item.breakdown === true || item.status === 'maintenance' || item.status === 'BreakDown';
+          const assetCode = (item.asset_number && item.asset_number !== 'null' && item.asset_number !== '0')
+            ? `AST-${item.asset_number}`
+            : `AST-${item.id}`;
+          return {
+            id: assetCode,
+            name: item.name || `Equipment #${item.id}`,
+            category: item.category || 'Uncategorized',
+            site: item.site_name || activeSite || 'Horizon Parks',
+            status: isBreakdown ? 'BreakDown' : 'Operational',
+            health: isBreakdown ? 48.0 : 100.0,
+            priority: isBreakdown ? 'High' : 'Normal',
+            technician: isBreakdown
+              ? 'OEM Breakdown Lead'
+              : (item.location ? `Location: ${item.location}` : 'Routine FM Operations'),
+            location: item.location || ''
+          };
+        });
+      }
+      return GENERATE_ASSETS(activeSite, assetDetailData || drillDownInfo.liveData);
+    }
+
+    // 2. SERVICE DESK
+    if (type === 'servicedesk') {
+      const live = serviceDeskDetailData || drillDownInfo.liveData;
+      const records = [];
+      const seenIds = new Set();
+      const priorityTickets = live?.priorityTickets || live?.priority_tickets || [];
+
+      // Priority tickets from live backend API
+      priorityTickets.forEach((item) => {
+        const idKey = `TKT-${item.ticket_number || item.id}`;
+        if (!seenIds.has(idKey)) {
+          seenIds.add(idKey);
+          records.push({
+            id: idKey,
+            name: item.heading || `Ticket #${item.ticket_number || item.id}`,
+            title: item.heading || `Ticket #${item.ticket_number || item.id}`,
+            category: 'Priority Escalation',
+            site: item.site_name || activeSite || 'Horizon Parks',
+            status: item.status || 'Pending',
+            priority: item.priority || 'P1',
+            sla: item.sla_status === 'Breached' ? 'Outside TAT' : 'Within TAT',
+            technician: item.priority ? `Priority: ${item.priority} • ${item.sla_status || 'SLA Monitored'}` : 'Facility Helpdesk',
+            location: item.site_name || 'Horizon Parks',
+            resolvedAt: item.created_at ? new Date(item.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Active Window'
+          });
+        }
+      });
+
+      // Live service categories from backend API
+      const cats = live?.ticketsByCategory || live?.tickets_by_category || [];
+      cats.forEach((catObj) => {
+        const catName = catObj.category || catObj.name;
+        const count = Number(catObj.count) || 0;
+        if (count > 0 && catName) {
+          const sample = Math.min(count, 8);
+          for (let i = 1; i <= sample; i++) {
+            const idKey = `TKT-${catName.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'CAT'}-${1000 + i}`;
+            if (!seenIds.has(idKey)) {
+              seenIds.add(idKey);
+              records.push({
+                id: idKey,
+                name: `${catName} Request #${i}`,
+                title: `${catName} Request #${i}`,
+                category: catName,
+                site: activeSite || 'Horizon Parks',
+                status: i % 2 === 0 ? 'Closed' : 'Operational',
+                priority: 'Normal',
+                sla: 'Within TAT',
+                technician: `Category: ${catName} • SLA Compliant`,
+                location: activeSite || 'Horizon Parks',
+                resolvedAt: 'Within Target SLA'
+              });
+            }
+          }
+        }
+      });
+
+      if (records.length > 0) return records;
+      return GENERATE_TICKETS();
+    }
+
+    // 3. PPM & SOFT SERVICES
+    if (type === 'ppm') {
+      if (ppmDrillRecords && ppmDrillRecords.length > 0) {
+        const isSpecificSite = activeSite && activeSite !== 'All Sites';
+        let filtered = ppmDrillRecords;
+        if (isSpecificSite) {
+          const siteKey = activeSite.toLowerCase().trim();
+          filtered = ppmDrillRecords.filter((item) => {
+            const s = String(item.site_name || '').toLowerCase().trim();
+            return s === siteKey || s.includes(siteKey) || siteKey.includes(s);
+          });
+        }
+        return filtered.map((item) => {
+          const isComplete = item.status === 'complete' || item.status === 'completed';
+          const isOverdue = item.status === 'overdue';
+          const statusLabel = isComplete ? 'Completed' : (isOverdue ? 'Overdue' : 'Pending');
+          const cleanName = (item.checklist || item.category || 'PPM Checklist').replace('MONTHLY CHECKLIST - ', '');
+          return {
+            id: `PPM-${item.id}`,
+            name: cleanName,
+            title: cleanName,
+            category: cleanName,
+            site: item.site_name || activeSite || 'Horizon Parks',
+            status: statusLabel,
+            compliance: isComplete ? '100%' : '0%',
+            dueDate: item.start_time ? new Date(item.start_time).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Scheduled',
+            completedDate: isComplete ? (item.end_time ? new Date(item.end_time).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Verified') : '—',
+            technician: item.asset_name ? `Asset: ${item.asset_name}${item.location ? ` (${item.location})` : ''}` : (item.location || 'Facility Engineering'),
+            location: item.location || '',
+            resolvedAt: item.start_time ? new Date(item.start_time).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Scheduled'
+          };
+        });
+      }
+      return GENERATE_PPM_TASKS();
+    }
+
+    // 4. WORKFORCE
+    if (type === 'workforce') {
+      if (workforceDrillRecords && workforceDrillRecords.length > 0) {
+        const isSpecificSite = activeSite && activeSite !== 'All Sites';
+        let filtered = workforceDrillRecords;
+        if (isSpecificSite) {
+          const siteKey = activeSite.toLowerCase().trim();
+          filtered = workforceDrillRecords.filter((item) => {
+            const s = String(item.site_name || '').toLowerCase().trim();
+            return s === siteKey || s.includes(siteKey) || siteKey.includes(s);
+          });
+        }
+        return filtered.map((item) => ({
+          id: item.employee_no || `STF-${item.id}`,
+          name: item.name?.trim(),
+          title: item.name?.trim(),
+          category: item.work_type || 'Operations Staff',
+          site: item.site_name || activeSite || 'Horizon Parks',
+          status: item.present_today ? 'Present' : 'Absent',
+          workType: item.work_type,
+          technician: `Vendor: ${item.vendor || 'In-House'}`,
+          location: item.site_name || '',
+          shift: 'General Operational Shift',
+          checkInTime: item.present_today ? 'Present on Site' : 'Absent',
+          resolvedAt: item.present_today ? 'Active Today' : 'Absent Today'
+        }));
+      }
+      const live = workforceDetailData || drillDownInfo.liveData;
+      return (live?.by_work_type || []).map((wt, idx) => ({
+        id: `STF-${1000 + idx}`,
+        name: `${wt.work_type || wt.type} Staff Deployment`,
+        title: `${wt.work_type || wt.type} Staff Deployment`,
+        category: wt.work_type || wt.type,
+        site: activeSite || 'Horizon Parks',
+        status: 'Present',
+        technician: 'Vendor: In-House',
+        location: activeSite || 'Horizon Parks',
+        resolvedAt: 'Active Today'
+      }));
+    }
+
+    // 5. AMC
     if (type === 'amc') return GENERATE_AMC_CONTRACTS();
-    if (type === 'visitors') return GENERATE_VISITORS();
+
+    // 6. VISITORS
+    if (type === 'visitors') {
+      if (visitorsDrillRecords && visitorsDrillRecords.length > 0) {
+        return visitorsDrillRecords.map((item) => {
+          const isInside = item.status === 'inside' || !item.check_out;
+          return {
+            id: `VIS-${item.id}`,
+            name: item.visitor_name ? `${item.visitor_name}${item.host_name ? ` (Host: ${item.host_name})` : ''}` : `Visitor #${item.visitor_id || item.id}`,
+            category: item.category || item.visit_type || item.purpose || 'Visitor',
+            site: item.site_name || activeSite || 'Horizon Parks',
+            status: isInside ? 'Present' : 'Completed',
+            workType: item.purpose || item.visit_type || 'General Visit',
+            checkInTime: item.check_in ? new Date(item.check_in).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A',
+            resolvedAt: item.check_out ? new Date(item.check_out).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Currently Inside'
+          };
+        });
+      }
+      return GENERATE_VISITORS();
+    }
     if (type === 'resolution') return GENERATE_RESOLUTION_METRICS();
     return [];
-  }, [drillDownInfo, activeSite]);
+  }, [
+    drillDownInfo,
+    activeSite,
+    visitorsDrillRecords,
+    assetDrillRecords,
+    assetDetailData,
+    serviceDeskDetailData,
+    serviceDeskDrillRecords,
+    ppmDetailData,
+    ppmDrillRecords,
+    workforceDetailData,
+    workforceDrillRecords
+  ]);
 
   // Generate structured category breakdown for charts
   const chartDataset = useMemo(() => {
     if (!drillDownInfo) return { items: [], total: 0, kpis: [] };
     const type = drillDownInfo.type;
-    const live = drillDownInfo.liveData;
+    const live = assetDetailData || serviceDeskDetailData || ppmDetailData || workforceDetailData || drillDownInfo.liveData;
 
     // 1. SERVICE DESK
     if (type === 'servicedesk') {
-      const items = (live?.ticketsByCategory && live.ticketsByCategory.length > 0)
-        ? live.ticketsByCategory.map((c, i) => ({
-            label: c.category,
-            value: c.count,
-            color: c.color || PALETTE[i % PALETTE.length]
-          }))
+      const cats = live?.ticketsByCategory || live?.tickets_by_category || [];
+      const items = (cats && cats.length > 0)
+        ? cats
+            .map((c, i) => ({
+              label: c.category || c.name,
+              value: Number(c.count) || 0,
+              color: c.color || PALETTE[i % PALETTE.length]
+            }))
+            .filter((it) => it.value > 0)
         : [
-            { label: 'Uncategorized', value: 286, color: '#8B5CF6' },
-            { label: 'General', value: 7, color: '#3B82F6' },
-            { label: 'IT Infrastructure check list', value: 5, color: '#10B981' },
-            { label: 'Onboarding', value: 5, color: '#F59E0B' },
-            { label: 'Offboarding', value: 3, color: '#EF4444' },
-            { label: 'Invoice Process', value: 2, color: '#EC4899' },
-            { label: 'Network', value: 2, color: '#06B6D4' },
-            { label: 'Microsoft Apps', value: 2, color: '#F97316' },
-            { label: 'Hardware', value: 1, color: '#14B8A6' },
-            { label: 'Printer', value: 1, color: '#84CC16' },
-            { label: 'Laptop Configuration', value: 1, color: '#D946EF' },
-            { label: 'System Admin', value: 1, color: '#6366F1' }
+            { label: 'Uncategorized', value: 2480, color: '#8B5CF6' },
+            { label: 'General', value: 1627, color: '#3B82F6' },
+            { label: 'SAP', value: 325, color: '#10B981' },
+            { label: 'Other', value: 140, color: '#F59E0B' },
+            { label: 'Invoice Process', value: 122, color: '#EC4899' },
+            { label: 'Onboarding', value: 105, color: '#06B6D4' }
           ];
 
-      const total = live?.total ?? items.reduce((sum, it) => sum + it.value, 0);
+      const total = live?.summary?.total ?? live?.total ?? items.reduce((sum, it) => sum + it.value, 0);
 
       const kpis = [
         { label: 'Total Tickets', value: total, unit: 'Requests', color: '#FF7A45' },
-        { label: 'SLA Compliance', value: live?.slaStatus?.tatCompliance ?? 100.0, unit: '%', isPct: true, color: '#00E676' },
-        { label: 'Closed / Handled', value: live?.closed ?? 165, unit: 'Closed', color: '#3B82F6' },
-        { label: 'Breached SLAs', value: live?.slaStatus?.outsideTat ?? 0, unit: 'Zero', color: '#10B981' }
+        { label: 'SLA Compliance', value: live?.slaStatus?.tatCompliance ?? live?.sla_status?.sla_percentage ?? 97.4, unit: '%', isPct: true, color: '#00E676' },
+        { label: 'Closed / Handled', value: live?.summary?.closed ?? live?.closed ?? 0, unit: 'Closed', color: '#3B82F6' },
+        { label: 'Breached SLAs', value: live?.slaStatus?.outsideTat ?? live?.sla_status?.breached ?? 0, unit: 'Breaches', color: '#EF4444' }
       ];
 
       return { items, total, kpis };
     }
 
-    // 2. PPM OPERATIONS
+    // 2. PPM & SOFT SERVICES OPERATIONS
     if (type === 'ppm') {
-      const items = [
-        { label: 'PANEL Maintenance', value: 7, color: '#EF4444' },
-        { label: 'PUMPS Operations', value: 6, color: '#00E676' },
-        { label: 'DG Sets', value: 1, color: '#00B0FF' },
-        { label: 'TRANSFORMER', value: 1, color: '#F59E0B' },
-        { label: 'DG AMF PANEL', value: 1, color: '#8B5CF6' }
-      ];
-      const total = live?.scheduledTasks ?? 16;
+      const isSoft = drillDownInfo?.service === 'softServices';
+      let items = [];
+
+      if (isSoft) {
+        const softList = live?.softServices?.categoryCompliance || live?.softServices?.plannedVsAchieved || [];
+        items = softList.map((c, i) => ({
+          label: (c.name || c.category || 'Soft Services').replace(/^(DAILY|WEEKLY|MONTHLY|BI-WEEKLY) CHECKLIST - /, ''),
+          value: Number(c.total || c.planned || c.completed || 0),
+          color: PALETTE[i % PALETTE.length]
+        })).filter((it) => it.value > 0);
+      } else {
+        const ppmCats = live?.ppm?.by_category || live?.categoryCompliance || live?.plannedVsAchieved || [];
+        items = ppmCats.map((c, i) => ({
+          label: (c.category || c.name || 'PPM').replace('MONTHLY CHECKLIST - ', ''),
+          value: Number(c.total || c.planned || 0),
+          color: PALETTE[i % PALETTE.length]
+        })).filter((it) => it.value > 0);
+      }
+
+      if (items.length === 0) {
+        items = [
+          { label: 'PANEL Maintenance', value: 238, color: '#EF4444' },
+          { label: 'PUMPS Operations', value: 219, color: '#00C853' },
+          { label: 'DG Sets', value: 34, color: '#00B0FF' },
+          { label: 'TRANSFORMER', value: 34, color: '#F59E0B' },
+          { label: 'DG AMF PANEL', value: 34, color: '#8B5CF6' }
+        ];
+      }
+
+      const total = isSoft
+        ? (live?.softServices?.total ?? 60)
+        : (live?.scheduledTasks ?? live?.ppm?.total ?? items.reduce((sum, it) => sum + it.value, 0));
+
+      const compRate = isSoft
+        ? (live?.softServices?.compliancePercentage ?? 10.0)
+        : (live?.compliancePercentage ?? live?.ppm?.completion_percentage ?? 43.8);
+
+      const completed = isSoft
+        ? (live?.softServices?.stats?.completed ?? 6)
+        : (live?.stats?.completed ?? live?.ppm?.completed ?? 7);
+
+      const overdue = isSoft
+        ? (live?.softServices?.stats?.overdue ?? 42)
+        : (live?.stats?.overdue ?? live?.ppm?.overdue ?? 9);
+
       const kpis = [
         { label: 'Total Scheduled', value: total, unit: 'Tasks', color: '#00C853' },
-        { label: 'Completion Rate', value: live?.compliancePercentage ?? 43.8, unit: '%', isPct: true, color: '#3B82F6' },
-        { label: 'Completed On-Time', value: live?.stats?.completed ?? 7, unit: 'Tasks', color: '#00E676' },
-        { label: 'Overdue / Catch-up', value: live?.stats?.overdue ?? 9, unit: 'Overdue', color: '#EF4444' }
+        { label: 'Completion Rate', value: compRate, unit: '%', isPct: true, color: '#3B82F6' },
+        { label: 'Completed On-Time', value: completed, unit: 'Tasks', color: '#00E676' },
+        { label: 'Overdue / Catch-up', value: overdue, unit: 'Overdue', color: '#EF4444' }
       ];
+
       return { items, total, kpis };
     }
 
-    // 3. ASSET PORTFOLIO
+    // 3. WORKFORCE TRACKING
+    if (type === 'workforce') {
+      const wfList = live?.byWorkType || live?.by_work_type || [];
+      const items = wfList.map((w, i) => ({
+        label: w.type || w.work_type,
+        value: Number(w.count) || 0,
+        color: w.color || PALETTE[i % PALETTE.length]
+      })).filter((it) => it.value > 0);
+
+      const total = live?.totalEmployees ?? live?.summary?.total ?? 46;
+      const availPct = live?.overallAvailability ?? live?.summary?.availability_percentage ?? 15.2;
+      const presentCount = live?.present ?? live?.summary?.present ?? 7;
+      const absentCount = live?.absent ?? live?.summary?.absent ?? 39;
+
+      const kpis = [
+        { label: 'Total Workforce', value: total, unit: 'Employees', color: '#3B82F6' },
+        { label: 'Availability Rate', value: availPct, unit: '%', isPct: true, color: '#00E676' },
+        { label: 'Present Today', value: presentCount, unit: 'On-Duty', color: '#10B981' },
+        { label: 'Absent Today', value: absentCount, unit: 'Absent', color: '#EF4444' }
+      ];
+
+      return { items, total, kpis };
+    }
+
+    // 4. ASSET PORTFOLIO
     if (type === 'assets') {
       const isSpecificSite = activeSite && activeSite !== 'All Sites';
       let items = [];
@@ -1235,12 +1876,12 @@ export default function DrillDownModal({
           }));
         } else {
           items = [
-            { label: 'Uncategorized Equipment', value: 338, color: '#8B5CF6' },
-            { label: 'Electrical Panels & DGs', value: 116, color: '#00E676' },
-            { label: 'Water & Fire Pumps', value: 40, color: '#3B82F6' },
-            { label: 'Fire Suppression Systems', value: 13, color: '#EF4444' },
-            { label: 'Plumbing & Drainage', value: 6, color: '#00B0FF' },
-            { label: 'CCTV & Surveillance', value: 3, color: '#F59E0B' }
+            { label: 'Uncategorized', value: 338, color: '#8B5CF6' },
+            { label: 'Electrical', value: 116, color: '#00E676' },
+            { label: 'Pump', value: 40, color: '#3B82F6' },
+            { label: 'Fire', value: 13, color: '#EF4444' },
+            { label: 'Plumbing', value: 6, color: '#00B0FF' },
+            { label: 'CCTV', value: 3, color: '#F59E0B' }
           ];
         }
       }
@@ -1249,13 +1890,13 @@ export default function DrillDownModal({
       const kpis = [
         { label: isSpecificSite ? `${activeSite} Assets` : 'Nationwide Assets', value: total, unit: 'Units', color: '#00E676' },
         { label: 'Operational Health', value: live?.health_percentage ?? 97.9, unit: '%', isPct: true, color: '#00E676' },
-        { label: 'Active Operational', value: live?.operational ?? (total > 0 ? Math.max(0, total - (live?.maintenance ?? 0)) : 0), unit: 'Units', color: '#10B981' },
-        { label: 'Breakdown Units', value: live?.maintenance ?? 0, unit: 'Alert', color: '#EF4444' }
+        { label: 'Active Operational', value: live?.operational ?? (total > 0 ? Math.max(0, total - (live?.maintenance ?? 11)) : 505), unit: 'Units', color: '#10B981' },
+        { label: 'Breakdown Units', value: live?.maintenance ?? 11, unit: 'Alert', color: '#EF4444' }
       ];
       return { items, total, kpis };
     }
 
-    // 4. AMC COMPLIANCE
+    // 5. AMC COMPLIANCE
     if (type === 'amc') {
       const amcVal = typeof drillDownInfo?.metricValue === 'number' ? drillDownInfo.metricValue : 0;
       const items = [
@@ -1279,27 +1920,46 @@ export default function DrillDownModal({
       return { items, total, kpis };
     }
 
-    // 5. VISITORS & GATE
+    // 6. VISITORS & GATE
     if (type === 'visitors') {
-      const items = [
-        { label: 'Amazon Logistics', value: 3410, color: '#FF9100' },
-        { label: 'Flipkart Supply Chain', value: 2890, color: '#3B82F6' },
-        { label: 'Delhivery Express', value: 2150, color: '#EF4444' },
-        { label: 'Blue Dart Express', value: 1340, color: '#00B0FF' },
-        { label: 'DHL Global Forwarding', value: 820, color: '#F59E0B' },
-        { label: 'Blinkit Hub', value: 468, color: '#84CC16' }
-      ];
-      const total = 11078;
+      let items = [];
+      if (visitorsDetailData?.period?.by_category && visitorsDetailData.period.by_category.length > 0) {
+        items = visitorsDetailData.period.by_category
+          .filter((c) => c.category && c.category.trim().length > 1 && !/^\d+$/.test(c.category.trim()))
+          .map((c, i) => ({
+            label: c.category.trim(),
+            value: Number(c.count) || 0,
+            color: PALETTE[i % PALETTE.length]
+          }))
+          .sort((a, b) => b.value - a.value);
+      }
+
+      if (items.length === 0) {
+        items = [
+          { label: 'Truck', value: 8214, color: '#FF9100' },
+          { label: 'Delivery', value: 1889, color: '#3B82F6' },
+          { label: 'Government Official', value: 602, color: '#00E676' },
+          { label: 'Truck Unloading', value: 421, color: '#EF4444' },
+          { label: 'Truck Loading', value: 277, color: '#8B5CF6' },
+          { label: 'Guest', value: 123, color: '#00B0FF' }
+        ];
+      }
+
+      const curInside = visitorsDetailData?.today?.currently_inside ?? live?.summary?.currently_inside ?? 907;
+      const checkedIn = visitorsDetailData?.today?.checked_in ?? live?.summary?.checked_in ?? 10151;
+      const checkedOut = visitorsDetailData?.today?.checked_out ?? live?.summary?.checked_out ?? 9244;
+      const totalPeriod = visitorsDetailData?.period?.total ?? checkedIn;
+
       const kpis = [
-        { label: 'Currently Inside', value: 1240, unit: 'Active', color: '#FF9100' },
-        { label: 'Daily Check-Ins', value: 11078, unit: 'Passes', color: '#3B82F6' },
-        { label: 'Completed Exits', value: 9838, unit: 'Cleared', color: '#00E676' },
-        { label: 'Security Gate Sites', value: 21, unit: 'Parks', color: '#8B5CF6' }
+        { label: 'Currently Inside', value: curInside, unit: 'Active', color: '#FF9100' },
+        { label: 'Daily Check-Ins', value: checkedIn, unit: 'Passes', color: '#3B82F6' },
+        { label: 'Completed Exits', value: checkedOut, unit: 'Cleared', color: '#00E676' },
+        { label: 'Security Gate Sites', value: activeSite && activeSite !== 'All Sites' ? 1 : 21, unit: 'Parks', color: '#8B5CF6' }
       ];
-      return { items, total, kpis };
+      return { items, total: totalPeriod, kpis };
     }
 
-    // 6. RESOLUTION TIME & SLA
+    // 7. RESOLUTION TIME & SLA
     if (type === 'resolution') {
       const resVal = typeof drillDownInfo?.metricValue === 'number' 
         ? drillDownInfo.metricValue 
@@ -1327,7 +1987,16 @@ export default function DrillDownModal({
     }
 
     return { items: [], total: 0, kpis: [] };
-  }, [drillDownInfo, activeSite, rawDataset]);
+  }, [
+    drillDownInfo,
+    activeSite,
+    rawDataset,
+    visitorsDetailData,
+    assetDetailData,
+    serviceDeskDetailData,
+    ppmDetailData,
+    workforceDetailData
+  ]);
 
   // Filtered dataset for table
   const filteredDataset = useMemo(() => {
@@ -1397,6 +2066,7 @@ export default function DrillDownModal({
       case 'assets': return <Wrench size={22} color="#00E676" />;
       case 'servicedesk': return <Ticket size={22} color="#FF7A45" />;
       case 'ppm': return <Calendar size={22} color="#00C853" />;
+      case 'workforce': return <Users size={22} color="#3B82F6" />;
       case 'amc': return <FileCheck2 size={22} color="#8B5CF6" />;
       case 'visitors': return <Users size={22} color="#FF9100" />;
       case 'resolution': return <Clock size={22} color="#00B0FF" />;
@@ -1409,6 +2079,7 @@ export default function DrillDownModal({
       case 'assets': return '#00E676';
       case 'servicedesk': return '#FF5B22';
       case 'ppm': return '#00C853';
+      case 'workforce': return '#3B82F6';
       case 'amc': return '#8B5CF6';
       case 'visitors': return '#FF9100';
       case 'resolution': return '#00B0FF';
@@ -1490,6 +2161,23 @@ export default function DrillDownModal({
         item.dueDate || '',
         item.completedDate || '',
         item.technician || ''
+      ]);
+    } else if (typeSlug === 'workforce') {
+      headers = [
+        'Employee ID',
+        'Staff Name',
+        'Work Type / Discipline',
+        'Park Location',
+        'Attendance Status',
+        'Contractor Vendor'
+      ];
+      rows = filteredDataset.map((item) => [
+        item.id || '',
+        item.name || item.title || '',
+        item.category || item.workType || '',
+        item.site || activeSite || '',
+        item.status || '',
+        item.technician || 'In-House'
       ]);
     } else {
       if (filteredDataset.length > 0) {
@@ -1782,8 +2470,8 @@ export default function DrillDownModal({
         style={{
           width: '100%',
           maxWidth: '1180px',
-          height: '88vh',
-          maxHeight: '90vh',
+          height: 'min(92vh, 880px)',
+          maxHeight: '94vh',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: isLight ? '#FFFFFF' : '#0B0F19',
@@ -2237,11 +2925,12 @@ export default function DrillDownModal({
             style={{
               flex: 1,
               minHeight: 0,
-              overflow: 'hidden',
-              padding: '16px 28px',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: '14px 28px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '14px'
+              gap: '12px'
             }}
           >
             {/* Chart Presentation Canvas Card */}
@@ -2249,15 +2938,16 @@ export default function DrillDownModal({
               className="chart-card-container"
               style={{
                 flex: 1,
-                minHeight: 0,
+                minHeight: '280px',
                 padding: '16px 20px',
                 borderRadius: '16px',
                 backgroundColor: isLight ? '#FAFAFA' : 'rgba(255, 255, 255, 0.02)',
                 border: isLight ? '1px solid #E2E8F0' : '1px solid rgba(255, 255, 255, 0.06)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
-                overflow: 'hidden',
+                gap: '10px',
+                overflowY: 'auto',
+                overflowX: 'hidden',
                 boxSizing: 'border-box',
                 position: 'relative'
               }}
@@ -2337,7 +3027,7 @@ export default function DrillDownModal({
                 )}
               </span>
               <span style={{ color: getAccentColor(), fontWeight: 700 }}>
-                ● Real-time Synced
+                {isLoadingAssets || isLoadingVisitors || isLoadingServiceDesk || isLoadingPpm || isLoadingWorkforce ? '● Syncing Live Telemetry...' : '● Real-time Synced'}
               </span>
             </div>
           </div>
@@ -2395,7 +3085,7 @@ export default function DrillDownModal({
 
               {/* Status filter tabs */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {['ALL', 'OPERATIONAL', 'BREAKDOWN', 'COMPLIANT', 'SLA MET', 'OVERDUE', 'COMPLETED', 'PRESENT', 'CLOSED'].map((tab) => {
+                {['ALL', 'OPERATIONAL', 'BREAKDOWN', 'COMPLIANT', 'SLA MET', 'OVERDUE', 'COMPLETED', 'PRESENT', 'ABSENT', 'CLOSED', 'PENDING'].map((tab) => {
                   const hasMatching = rawDataset.some(
                     (d) => d.status && d.status.toUpperCase() === tab
                   );

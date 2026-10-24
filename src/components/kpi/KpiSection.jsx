@@ -177,9 +177,9 @@ export default function KpiSection({
           'passes',
           'traffic'
         ],
-        inspectionSummary: `${(kpis.totalVisitors?.value ?? 1240).toLocaleString()} Currently inside parks (${(kpis.totalVisitors?.submetrics?.[0]?.value ?? 11078).toLocaleString()} checked in today)`,
-        periodTrendText: kpis.totalVisitors?.trendText || `+0% vs ${periodLabel}`,
-        targetTrendText: `Peak occupancy ${(kpis.totalVisitors?.value ?? 1240).toLocaleString()} visitors`
+        inspectionSummary: `${(kpis.totalVisitors?.value ?? 0).toLocaleString()} Currently inside parks (${(kpis.totalVisitors?.submetrics?.[0]?.value ?? 0).toLocaleString()} checked in)`,
+        periodTrendText: kpis.totalVisitors?.trendText || `0% vs ${periodLabel}`,
+        targetTrendText: `Active occupancy ${(kpis.totalVisitors?.value ?? 0).toLocaleString()} visitors`
       },
       {
         id: 'avgResolutionTime',

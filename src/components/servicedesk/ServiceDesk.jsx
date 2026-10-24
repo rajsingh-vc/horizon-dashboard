@@ -21,7 +21,8 @@ export default function ServiceDesk({
   selectedCategory = 'All Categories',
   selectedSite = 'All Sites',
   onSiteSelect,
-  sites = []
+  sites = [],
+  onDrillDown
 }) {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [userSelectedChartType, setUserSelectedChartType] = useState('Vertical Bar');
@@ -533,14 +534,18 @@ export default function ServiceDesk({
       >
         {/* Total */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ tab: 'ALL' })}
           className="glass-card glass-card-lift"
           style={{
             padding: '16px 20px',
             background: 'linear-gradient(135deg, rgba(255, 91, 34, 0.9) 0%, rgba(194, 65, 12, 0.95) 100%)',
             border: '1px solid rgba(255, 91, 34, 0.4)',
             boxShadow: '0 8px 24px rgba(255, 91, 34, 0.25)',
-            color: '#FFFFFF'
+            color: '#FFFFFF',
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}
+          title="Click to inspect all tickets"
         >
           <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9 }}>
             Total Tickets
@@ -548,19 +553,23 @@ export default function ServiceDesk({
           <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.1, margin: '6px 0 2px 0' }}>
             <AnimatedNumber value={total} triggerKey={triggerKey} />
           </div>
-          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>All logged requests</span>
+          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>All logged requests • Click to drill</span>
         </div>
 
         {/* Open */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ tab: 'OPEN' })}
           className="glass-card glass-card-lift"
           style={{
             padding: '16px 20px',
             background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.85) 0%, rgba(76, 29, 149, 0.95) 100%)',
             border: '1px solid rgba(139, 92, 246, 0.4)',
             boxShadow: '0 8px 24px rgba(124, 58, 237, 0.25)',
-            color: '#FFFFFF'
+            color: '#FFFFFF',
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}
+          title="Click to inspect open tickets"
         >
           <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9 }}>
             Open
@@ -568,19 +577,23 @@ export default function ServiceDesk({
           <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.1, margin: '6px 0 2px 0' }}>
             <AnimatedNumber value={open} triggerKey={triggerKey} />
           </div>
-          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>Awaiting assignment</span>
+          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>Awaiting assignment • Click to drill</span>
         </div>
 
         {/* In Progress */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ tab: 'IN_PROGRESS' })}
           className="glass-card glass-card-lift"
           style={{
             padding: '16px 20px',
             background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.85) 0%, rgba(180, 83, 9, 0.95) 100%)',
             border: '1px solid rgba(245, 158, 11, 0.4)',
             boxShadow: '0 8px 24px rgba(217, 119, 6, 0.25)',
-            color: '#FFFFFF'
+            color: '#FFFFFF',
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}
+          title="Click to inspect in-progress tickets"
         >
           <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9 }}>
             In Progress
@@ -588,19 +601,23 @@ export default function ServiceDesk({
           <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.1, margin: '6px 0 2px 0' }}>
             <AnimatedNumber value={inProgress} triggerKey={triggerKey} />
           </div>
-          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>Active work underway</span>
+          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>Active work underway • Click to drill</span>
         </div>
 
         {/* Closed */}
         <div
+          onClick={() => onDrillDown && onDrillDown({ tab: 'CLOSED' })}
           className="glass-card glass-card-lift"
           style={{
             padding: '16px 20px',
             background: 'linear-gradient(135deg, rgba(0, 200, 83, 0.85) 0%, rgba(4, 120, 87, 0.95) 100%)',
             border: '1px solid rgba(0, 200, 83, 0.4)',
             boxShadow: '0 8px 24px rgba(0, 200, 83, 0.25)',
-            color: '#FFFFFF'
+            color: '#FFFFFF',
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}
+          title="Click to inspect closed tickets"
         >
           <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9 }}>
             Closed
@@ -608,14 +625,25 @@ export default function ServiceDesk({
           <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.1, margin: '6px 0 2px 0' }}>
             <AnimatedNumber value={closed} triggerKey={triggerKey} />
           </div>
-          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>Resolved & verified</span>
+          <span style={{ fontSize: '0.6875rem', opacity: 0.85 }}>Resolved & verified • Click to drill</span>
         </div>
       </div>
 
       {/* 3-Column Detailed Modules */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
         {/* Module 1: SLA Status */}
-        <div className="glass-card glass-card-lift" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div 
+          onClick={() => onDrillDown && onDrillDown({ tab: 'ALL', segment: 'SLA' })}
+          className="glass-card glass-card-lift" 
+          style={{ 
+            padding: '22px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'space-between',
+            cursor: 'pointer'
+          }}
+          title="Click to view detailed SLA drill-down"
+        >
           <div>
             <ChartHeader
               title="SLA Status & Compliance"
@@ -689,12 +717,26 @@ export default function ServiceDesk({
         </div>
 
         {/* Module 2: Tickets by Category */}
-        <div className="glass-card glass-card-lift" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div 
+          onClick={() => onDrillDown && onDrillDown({ tab: 'ALL', segment: 'Category' })}
+          className="glass-card glass-card-lift" 
+          style={{ 
+            padding: '22px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'space-between',
+            cursor: 'pointer'
+          }}
+          title="Click to view detailed category breakdown drill-down"
+        >
           <ChartHeader
             title="Tickets by Category"
             subtitle="Distribution of logged service requests across facility operational categories."
             rightAction={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
                 <ChartDropdown
                   selectedType={categoryChartType}
                   onChange={(type) => setUserSelectedChartType(type)}
@@ -733,12 +775,23 @@ export default function ServiceDesk({
         </div>
 
         {/* Module 3: Priority Tickets */}
-        <div className="glass-card glass-card-lift" style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div 
+          onClick={() => onDrillDown && onDrillDown({ tab: 'PRIORITY', segment: 'Priority' })}
+          className="glass-card glass-card-lift" 
+          style={{ 
+            padding: '22px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'space-between',
+            cursor: 'pointer'
+          }}
+          title="Click to view priority escalations drill-down"
+        >
           <ChartHeader
             title="Priority Escalations"
             subtitle="Monitors urgent tickets and critical escalation resolution times."
-            badgeText="0 Urgent"
-            badgeColor="#00C853"
+            badgeText={priorityTickets.length > 0 ? `${priorityTickets.length} Escalations` : "0 Urgent"}
+            badgeColor={priorityTickets.length > 0 ? "#FF5B22" : "#00C853"}
             isLight={isLight}
             marginBottom="14px"
           />
@@ -750,12 +803,36 @@ export default function ServiceDesk({
               description="All service requests across nationwide facilities are operating within normal priority thresholds."
             />
           ) : (
-            <div>List of priority tickets</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {priorityTickets.slice(0, 3).map((t, idx) => (
+                <div 
+                  key={idx}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: isLight ? '#FEF2F2' : 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: '#EF4444' }}>#{t.ticket_number || t.id}</span>
+                  <span style={{ color: textPrimary, maxWidth: '170px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.heading || 'Escalated Request'}
+                  </span>
+                  <span style={{ fontWeight: 700, color: '#EF4444', fontSize: '0.6875rem' }}>{t.priority || 'P1'}</span>
+                </div>
+              ))}
+            </div>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6875rem', color: isLight ? '#64748B' : '#94A3B8', paddingTop: '12px', borderTop: isLight ? '1px solid rgba(0, 0, 0, 0.08)' : '1px solid rgba(255, 255, 255, 0.08)' }}>
             <span>Critical Escalation SLA: 15m</span>
-            <span style={{ color: '#00E676', fontWeight: 700 }}>Zero Breaches</span>
+            <span style={{ color: priorityTickets.length > 0 ? '#FF5B22' : '#00E676', fontWeight: 700 }}>
+              {priorityTickets.length > 0 ? `${priorityTickets.length} Active` : 'Zero Breaches'}
+            </span>
           </div>
         </div>
       </div>

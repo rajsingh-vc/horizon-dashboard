@@ -20,6 +20,8 @@ import {
   fetchPpmOperations, 
   fetchWorkforce,
   fetchGroupedDashboard,
+  fetchDashboardKPIs,
+  fetchSitePerformance,
   fetchOrgAssociates,
   getDateRangeFromPeriod
 } from './services/apiService';
@@ -193,13 +195,14 @@ export default function App() {
       const { fromDate, toDate } = getDateRangeFromPeriod(selectedDate, customDateRange);
 
       try {
-        const [assetsRes, serviceDeskRes, ppmRes, workforceRes, groupedRes, orgAssociatesRes] = await Promise.all([
+        const [assetsRes, serviceDeskRes, ppmRes, workforceRes, groupedRes, orgAssociatesRes, sitePerfRes] = await Promise.all([
           fetchAssetPortfolio({ siteId, fromDate, toDate }),
           fetchServiceDesk({ siteId, fromDate, toDate }),
           fetchPpmOperations({ siteId, fromDate, toDate }),
           fetchWorkforce({ siteId, fromDate, toDate }),
-          fetchGroupedDashboard({ role: 'ceo', siteId, fromDate, toDate }),
-          fetchOrgAssociates({ companyId: 84 })
+          fetchDashboardKPIs({ role: 'ceo', siteId, fromDate, toDate }),
+          fetchOrgAssociates({ companyId: 84 }),
+          fetchSitePerformance({ role: 'ceo', siteId, fromDate, toDate })
         ]);
 
         if (!isCancelled) {
@@ -207,11 +210,11 @@ export default function App() {
           if (serviceDeskRes) setServiceDeskData(serviceDeskRes);
           if (ppmRes) setPpmData(ppmRes);
           if (workforceRes) setWorkforceData(workforceRes);
-          if (groupedRes) {
-            setGroupedDashboardData(groupedRes);
-            if (groupedRes?.sites && Array.isArray(groupedRes.sites) && groupedRes.sites.length > 0) {
-              setSitesData(groupedRes.sites);
-            }
+          if (groupedRes) setGroupedDashboardData(groupedRes);
+          if (sitePerfRes?.sites && Array.isArray(sitePerfRes.sites) && sitePerfRes.sites.length > 0) {
+            setSitesData(sitePerfRes.sites);
+          } else if (groupedRes?.sites && Array.isArray(groupedRes.sites) && groupedRes.sites.length > 0) {
+            setSitesData(groupedRes.sites);
           }
           if (orgAssociatesRes) {
             if (Array.isArray(orgAssociatesRes.categories) && orgAssociatesRes.categories.length > 0) {
@@ -660,9 +663,11 @@ export default function App() {
     const amcTotal = groupedDashboardData?.compliance_score?.summary?.total ?? 0;
     const amcCompliant = groupedDashboardData?.compliance_score?.summary?.compliant ?? 0;
 
-    const totalVisitorsCount = groupedDashboardData?.visitors_today?.summary?.currently_inside ?? 1352;
-    const visitorsCheckedIn = groupedDashboardData?.visitors_today?.summary?.checked_in ?? 12567;
-    const visitorsCheckedOut = groupedDashboardData?.visitors_today?.summary?.checked_out ?? 11215;
+    const totalVisitorsCount = groupedDashboardData?.visitors_today?.summary?.currently_inside ?? 907;
+    const visitorsCheckedIn = groupedDashboardData?.visitors_today?.summary?.checked_in ?? 10151;
+    const visitorsCheckedOut = groupedDashboardData?.visitors_today?.summary?.checked_out ?? 9244;
+    const rawVisitorsTrend = groupedDashboardData?.visitors_today?.summary?.vs_yesterday;
+    const visitorsTrend = isNum(rawVisitorsTrend) ? Number(rawVisitorsTrend) : 0;
 
     // Determine final KPI values considering Category/Group/Site filters
     const finalAssetHealth = selectedCategory !== 'All Categories'
@@ -768,15 +773,17 @@ export default function App() {
         totalVisitors: {
           value: totalVisitorsCount,
           unit: '',
-          trend: 4.2,
-          trendType: 'up',
-          trendText: '+4.2% vs Prior Week',
+          trend: visitorsTrend,
+          trendType: visitorsTrend >= 0 ? 'up' : 'down',
+          trendText: rawVisitorsTrend !== null && rawVisitorsTrend !== undefined
+            ? `${visitorsTrend > 0 ? '+' : ''}${visitorsTrend}% vs yesterday`
+            : '0% vs yesterday',
           target: null,
           targetText: null,
           submetrics: [
-            { label: 'Checked In Today', value: visitorsCheckedIn, color: 'success' },
-            { label: 'Checked Out Today', value: visitorsCheckedOut, color: 'neutral' },
-            { label: 'Currently On-Premises', value: totalVisitorsCount, color: 'primary' }
+            { label: 'Checked In', value: visitorsCheckedIn, color: 'success' },
+            { label: 'Checked Out', value: visitorsCheckedOut, color: 'neutral' },
+            { label: 'Currently Inside', value: totalVisitorsCount, color: 'primary' }
           ]
         },
         avgResolutionTime: {
@@ -808,34 +815,97 @@ export default function App() {
     groupedDashboardData
   ]);
 
-  const handleCardClick = (kpiKey) => {
+  const handleCardClick = (kpiKey, drillOptions = {}) => {
     switch (kpiKey) {
-      case 'serviceRequestTat':
+      case 'serviceRequestTat': {
+        let siteId = null;
+        if (selectedSite !== 'All Sites') {
+          const found = sitesData.find((s) => s.name === selectedSite);
+          if (found) siteId = found.id;
+        }
+        const { fromDate, toDate } = getDateRangeFromPeriod(selectedDate, customDateRange);
+        const initialTab = drillOptions?.tab || 'ALL';
+
         setDrillDownModal({
           isOpen: true,
           info: {
             type: 'servicedesk',
             title: selectedSite !== 'All Sites' ? `Service Request SLA & TAT Intelligence — ${selectedSite}` : 'Service Request SLA & TAT Intelligence',
             subtitle: `Live Telemetry: ${currentData.serviceDesk?.total ?? 321} Requests • ${currentData.serviceDesk?.slaStatus?.tatCompliance ?? 100}% SLA • ${currentData.serviceDesk?.closed ?? 165} Closed`,
-            segment: 'All',
+            segment: drillOptions?.segment || 'All',
+            initialTab,
+            initialViewMode: drillOptions?.viewMode || (drillOptions?.tab ? 'TABLE' : 'CHARTS'),
             liveData: currentData.serviceDesk,
-            selectedSite: selectedSite
+            selectedSite: selectedSite,
+            siteId,
+            fromDate,
+            toDate
           }
         });
         break;
-      case 'ppmCompliance':
+      }
+      case 'ppmCompliance': {
+        let siteId = null;
+        if (selectedSite !== 'All Sites') {
+          const found = sitesData.find((s) => s.name === selectedSite);
+          if (found) siteId = found.id;
+        }
+        const { fromDate, toDate } = getDateRangeFromPeriod(selectedDate, customDateRange);
+        const isSoft = drillOptions?.service === 'softServices';
+        const initialTab = drillOptions?.tab || 'ALL';
+
         setDrillDownModal({
           isOpen: true,
           info: {
             type: 'ppm',
-            title: selectedSite !== 'All Sites' ? `Planned Preventive Maintenance (PPM) Operations — ${selectedSite}` : 'Planned Preventive Maintenance (PPM) Operations',
-            subtitle: `Live Telemetry: ${currentData.ppm?.scheduledTasks ?? 16} Tasks • ${currentData.ppm?.stats?.completed ?? 7} Completed (${currentData.ppm?.compliancePercentage ?? 43.8}%) • ${currentData.ppm?.stats?.overdue ?? 9} Overdue`,
-            segment: 'All',
+            title: selectedSite !== 'All Sites' 
+              ? `${isSoft ? 'Soft Services Operations' : 'Planned Preventive Maintenance (PPM)'} — ${selectedSite}`
+              : `${isSoft ? 'Soft Services Operations' : 'Planned Preventive Maintenance (PPM)'}`,
+            subtitle: isSoft
+              ? `Live Telemetry: ${currentData.ppm?.softServices?.total ?? 60} Tasks • ${currentData.ppm?.softServices?.stats?.completed ?? 6} Completed • ${currentData.ppm?.softServices?.stats?.overdue ?? 42} Overdue`
+              : `Live Telemetry: ${currentData.ppm?.scheduledTasks ?? 16} Tasks • ${currentData.ppm?.stats?.completed ?? 7} Completed (${currentData.ppm?.compliancePercentage ?? 43.8}%) • ${currentData.ppm?.stats?.overdue ?? 9} Overdue`,
+            service: drillOptions?.service || 'ppm',
+            category: drillOptions?.category,
+            segment: drillOptions?.segment || 'All',
+            initialTab,
+            initialViewMode: drillOptions?.viewMode || (drillOptions?.tab ? 'TABLE' : 'CHARTS'),
             liveData: currentData.ppm,
-            selectedSite: selectedSite
+            selectedSite: selectedSite,
+            siteId,
+            fromDate,
+            toDate
           }
         });
         break;
+      }
+      case 'workforceAvailability': {
+        let siteId = null;
+        if (selectedSite !== 'All Sites') {
+          const found = sitesData.find((s) => s.name === selectedSite);
+          if (found) siteId = found.id;
+        }
+        const { fromDate, toDate } = getDateRangeFromPeriod(selectedDate, customDateRange);
+        const initialTab = drillOptions?.tab || 'ALL';
+
+        setDrillDownModal({
+          isOpen: true,
+          info: {
+            type: 'workforce',
+            title: selectedSite !== 'All Sites' ? `Workforce Tracking & Deployment — ${selectedSite}` : 'Workforce Tracking & Deployment',
+            subtitle: `Live Telemetry: ${currentData.workforce?.totalEmployees ?? 46} Personnel • ${currentData.workforce?.present ?? 7} Present (${currentData.workforce?.overallAvailability ?? 15.2}% Availability) • ${currentData.workforce?.absent ?? 39} Absent`,
+            segment: drillOptions?.segment || 'All',
+            workType: drillOptions?.workType,
+            initialTab,
+            initialViewMode: drillOptions?.viewMode || (drillOptions?.tab ? 'TABLE' : 'CHARTS'),
+            liveData: currentData.workforce,
+            selectedSite: selectedSite,
+            siteId,
+            fromDate,
+            toDate
+          }
+        });
+        break;
+      }
       case 'amcCompliance':
         setDrillDownModal({
           isOpen: true,
@@ -849,31 +919,58 @@ export default function App() {
           }
         });
         break;
-      case 'assetHealth':
+      case 'assetHealth': {
+        let siteId = null;
+        if (selectedSite !== 'All Sites') {
+          const found = sitesData.find((s) => s.name === selectedSite);
+          if (found) siteId = found.id;
+        }
+        const { fromDate, toDate } = getDateRangeFromPeriod(selectedDate, customDateRange);
+
+        const initialTab = drillOptions?.tab || (drillOptions?.segment === 'BreakDown' ? 'BREAKDOWN' : (drillOptions?.segment === 'Operational' ? 'OPERATIONAL' : 'ALL'));
+
         setDrillDownModal({
           isOpen: true,
           info: {
             type: 'assets',
             title: selectedSite !== 'All Sites' ? `Asset Portfolio & Health Telemetry — ${selectedSite}` : 'Asset Portfolio & Health Telemetry',
             subtitle: `Live Telemetry: ${currentData.assets?.total ?? 516} Units • ${currentData.assets?.operational ?? 505} Operational (${currentData.assets?.health_percentage ?? 97.9}%) • ${currentData.assets?.maintenance ?? 11} Maintenance`,
-            segment: 'All',
+            segment: drillOptions?.segment || 'All',
+            initialTab,
+            initialViewMode: drillOptions?.viewMode || (drillOptions?.tab ? 'TABLE' : 'CHARTS'),
             liveData: currentData.assets,
-            selectedSite: selectedSite
+            selectedSite: selectedSite,
+            siteId,
+            fromDate,
+            toDate
           }
         });
         break;
-      case 'totalVisitors':
+      }
+      case 'totalVisitors': {
+        let siteId = null;
+        if (selectedSite !== 'All Sites') {
+          const found = sitesData.find((s) => s.name === selectedSite);
+          if (found) siteId = found.id;
+        }
+        const { fromDate, toDate } = getDateRangeFromPeriod(selectedDate, customDateRange);
+
         setDrillDownModal({
           isOpen: true,
           info: {
             type: 'visitors',
             title: selectedSite !== 'All Sites' ? `Security Gate & Visitor Operations — ${selectedSite}` : 'Security Gate & Visitor Operations',
-            subtitle: `${(currentData.kpis.totalVisitors?.value ?? 1352).toLocaleString()} Active Park Visitors (${(currentData.kpis.totalVisitors?.submetrics?.[0]?.value ?? 12567).toLocaleString()} Checked In)`,
+            subtitle: `${(currentData.kpis.totalVisitors?.value ?? 0).toLocaleString()} Active Park Visitors (${(currentData.kpis.totalVisitors?.submetrics?.[0]?.value ?? 0).toLocaleString()} Checked In)`,
             segment: 'All',
-            selectedSite: selectedSite
+            liveData: groupedDashboardData?.visitors_today,
+            selectedSite: selectedSite,
+            siteId,
+            fromDate,
+            toDate
           }
         });
         break;
+      }
       case 'avgResolutionTime':
         setDrillDownModal({
           isOpen: true,
@@ -1014,6 +1111,7 @@ export default function App() {
               onSiteSelect={handleSiteChange}
               sites={groupSites}
               selectedCategory={selectedCategory}
+              onDrillDown={(drillOptions) => handleCardClick('assetHealth', drillOptions)}
             />
 
             {/* Service Desk & SLA Intelligence responding to Site & Category filters */}
@@ -1025,6 +1123,7 @@ export default function App() {
               selectedSite={selectedSite}
               onSiteSelect={handleSiteChange}
               sites={groupSites}
+              onDrillDown={(drillOptions) => handleCardClick('serviceRequestTat', drillOptions)}
             />
 
             {/* PPM & Soft Services Operations responding to Site & Category filters */}
@@ -1036,6 +1135,7 @@ export default function App() {
               selectedSite={selectedSite}
               onSiteSelect={handleSiteChange}
               sites={groupSites}
+              onDrillDown={(drillOptions) => handleCardClick('ppmCompliance', drillOptions)}
             />
 
             {/* Workforce Tracking responding to Site & Vendor filters */}
@@ -1047,6 +1147,7 @@ export default function App() {
               onSiteSelect={handleSiteChange}
               sites={groupSites}
               selectedVendor={selectedVendor}
+              onDrillDown={(drillOptions) => handleCardClick('workforceAvailability', drillOptions)}
             />
           </>
         )}
