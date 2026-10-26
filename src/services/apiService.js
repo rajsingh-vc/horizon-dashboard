@@ -249,17 +249,17 @@ export async function fetchServiceDesk({
 export const DEFAULT_PPM_RESPONSE = {
   ppm: {
     total: 16,
-    completed: 7,
+    completed: 15,
     missed: 0,
-    overdue: 9,
+    overdue: 1,
     pending: 0,
-    completion_percentage: 43.8,
+    completion_percentage: 93.8,
     by_category: [
-      { category: 'MONTHLY CHECKLIST - DG', total: 1, completed: 1, completion_percentage: 100.0 },
-      { category: 'MONTHLY CHECKLIST - TRANSFORMER', total: 1, completed: 0, completion_percentage: 0.0 },
-      { category: 'MONTHLY CHECKLIST - DG AMF PANEL', total: 1, completed: 0, completion_percentage: 0.0 },
+      { category: 'MONTHLY CHECKLIST - DG', total: 1, completed: 0, completion_percentage: 0.0 },
+      { category: 'MONTHLY CHECKLIST - TRANSFORMER', total: 1, completed: 1, completion_percentage: 100.0 },
+      { category: 'MONTHLY CHECKLIST - DG AMF PANEL', total: 1, completed: 1, completion_percentage: 100.0 },
       { category: 'MONTHLY CHECKLIST - PUMPS', total: 6, completed: 6, completion_percentage: 100.0 },
-      { category: 'MONTHLY CHECKLIST - PANEL', total: 7, completed: 0, completion_percentage: 0.0 }
+      { category: 'MONTHLY CHECKLIST - PANEL', total: 7, completed: 7, completion_percentage: 100.0 }
     ]
   },
   soft_services: {
@@ -291,11 +291,11 @@ export function normalizePpmOperations(apiData = DEFAULT_PPM_RESPONSE) {
 
   return {
     scheduledTasks: ppm.total ?? 16,
-    compliancePercentage: ppm.completion_percentage ?? 43.8,
+    compliancePercentage: ppm.completion_percentage ?? 93.8,
     stats: {
-      completed: ppm.completed ?? 7,
+      completed: ppm.completed ?? 15,
       pending: ppm.pending ?? 0,
-      overdue: ppm.overdue ?? 9,
+      overdue: ppm.overdue ?? 1,
       missed: ppm.missed ?? 0
     },
     plannedVsAchieved,
@@ -333,8 +333,8 @@ export function normalizePpmOperations(apiData = DEFAULT_PPM_RESPONSE) {
 export async function fetchPpmOperations({
   role = 'ceo',
   siteId = null,
-  fromDate = '2026-09-01T00:00:00',
-  toDate = '2026-09-30T23:59:59'
+  fromDate = '2026-10-01T00:00:00',
+  toDate = '2026-10-31T23:59:59'
 } = {}) {
   try {
     const params = new URLSearchParams({ role, from_date: fromDate, to_date: toDate });

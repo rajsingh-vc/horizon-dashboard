@@ -202,7 +202,7 @@ export default function App() {
           fetchWorkforce({ siteId, fromDate, toDate }),
           fetchDashboardKPIs({ role: 'ceo', siteId, fromDate, toDate }),
           fetchOrgAssociates({ companyId: 84 }),
-          fetchSitePerformance({ role: 'ceo', siteId, fromDate, toDate })
+          fetchSitePerformance({ role: 'ceo', fromDate, toDate })
         ]);
 
         if (!isCancelled) {
@@ -212,7 +212,19 @@ export default function App() {
           if (workforceRes) setWorkforceData(workforceRes);
           if (groupedRes) setGroupedDashboardData(groupedRes);
           if (sitePerfRes?.sites && Array.isArray(sitePerfRes.sites) && sitePerfRes.sites.length > 0) {
-            setSitesData(sitePerfRes.sites);
+            const normalized = sitePerfRes.sites.map((s) => ({
+              ...s,
+              health: isNum(s.health_score) ? s.health_score : (isNum(s.health) ? s.health : 97.9),
+              health_score: isNum(s.health_score) ? s.health_score : (isNum(s.health) ? s.health : 97.9),
+              tat: isNum(s.sla_percentage) ? s.sla_percentage : (isNum(s.tat) ? s.tat : 100.0),
+              sla_percentage: isNum(s.sla_percentage) ? s.sla_percentage : (isNum(s.tat) ? s.tat : 100.0),
+              ppm: isNum(s.ppm_percentage) ? s.ppm_percentage : (isNum(s.ppm) ? s.ppm : 93.8),
+              ppm_percentage: isNum(s.ppm_percentage) ? s.ppm_percentage : (isNum(s.ppm) ? s.ppm : 93.8),
+              total_assets: s.total_assets ?? s.activeAssets ?? 0,
+              activeAssets: s.total_assets ?? s.activeAssets ?? 0,
+              tickets: (s.total_tickets != null ? s.total_tickets : ((s.pending_tickets || 0) + (s.open_tickets || 0))) || s.tickets || 0
+            }));
+            setSitesData(normalized);
           } else if (groupedRes?.sites && Array.isArray(groupedRes.sites) && groupedRes.sites.length > 0) {
             setSitesData(groupedRes.sites);
           }
@@ -299,33 +311,33 @@ export default function App() {
 
     // 2. Base metrics calculation
     const baseTickets = foundSite 
-      ? (foundSite.tickets || 0)
+      ? (foundSite.total_tickets ?? ((foundSite.pending_tickets ?? 0) + (foundSite.open_tickets ?? 0)) ?? foundSite.tickets ?? (serviceDeskData?.total ?? 0))
       : (selectedGroup !== 'All Groups' 
-          ? groupSites.reduce((sum, s) => sum + (s.tickets || 0), 0)
+          ? groupSites.reduce((sum, s) => sum + (s.total_tickets ?? ((s.pending_tickets ?? 0) + (s.open_tickets ?? 0)) ?? s.tickets ?? 0), 0)
           : (serviceDeskData?.total ?? 321));
 
     const baseAssets = foundSite 
-      ? (foundSite.activeAssets || foundSite.total_assets || 0)
+      ? (assetPortfolioData?.total ?? foundSite.total_assets ?? foundSite.activeAssets ?? 0)
       : (selectedGroup !== 'All Groups' 
-          ? groupSites.reduce((sum, s) => sum + (s.activeAssets || s.total_assets || 0), 0)
+          ? groupSites.reduce((sum, s) => sum + (s.total_assets ?? s.activeAssets ?? 0), 0)
           : (assetPortfolioData?.total ?? 516));
 
     const baseHealth = foundSite 
-      ? (isNum(foundSite.health) ? foundSite.health : 97.9)
+      ? (isNum(assetPortfolioData?.health_percentage) ? assetPortfolioData.health_percentage : (isNum(foundSite.health_score) ? foundSite.health_score : (isNum(foundSite.health) ? foundSite.health : 98.6)))
       : (selectedGroup !== 'All Groups'
-          ? (groupSites.length > 0 ? Number((groupSites.reduce((sum, s) => sum + (s.health || 0), 0) / groupSites.length).toFixed(1)) : 97.9)
+          ? (groupSites.length > 0 ? Number((groupSites.reduce((sum, s) => sum + (isNum(s.health_score) ? s.health_score : (isNum(s.health) ? s.health : 0)), 0) / groupSites.length).toFixed(1)) : 97.9)
           : (assetPortfolioData?.health_percentage ?? 97.9));
 
     const baseTat = foundSite 
-      ? (isNum(foundSite.tat) ? foundSite.tat : 100.0)
+      ? (isNum(serviceDeskData?.slaStatus?.tatCompliance) ? serviceDeskData.slaStatus.tatCompliance : (isNum(foundSite.sla_percentage) ? foundSite.sla_percentage : (isNum(foundSite.tat) ? foundSite.tat : 100.0)))
       : (selectedGroup !== 'All Groups'
-          ? (groupSites.length > 0 ? Number((groupSites.reduce((sum, s) => sum + (s.tat || 0), 0) / groupSites.length).toFixed(1)) : 100.0)
+          ? (groupSites.length > 0 ? Number((groupSites.reduce((sum, s) => sum + (isNum(s.sla_percentage) ? s.sla_percentage : (isNum(s.tat) ? s.tat : 0)), 0) / groupSites.length).toFixed(1)) : 100.0)
           : (serviceDeskData?.slaStatus?.tatCompliance ?? 100.0));
 
     const basePpm = foundSite 
-      ? (isNum(foundSite.ppm) ? foundSite.ppm : 43.8)
+      ? (isNum(ppmData?.compliancePercentage) ? ppmData.compliancePercentage : (isNum(foundSite.ppm_percentage) ? foundSite.ppm_percentage : (isNum(foundSite.ppm) ? foundSite.ppm : 0.0)))
       : (selectedGroup !== 'All Groups'
-          ? (groupSites.length > 0 ? Number((groupSites.reduce((sum, s) => sum + (s.ppm || 0), 0) / groupSites.length).toFixed(1)) : 43.8)
+          ? (groupSites.length > 0 ? Number((groupSites.reduce((sum, s) => sum + (isNum(s.ppm_percentage) ? s.ppm_percentage : (isNum(s.ppm) ? s.ppm : 0)), 0) / groupSites.length).toFixed(1)) : 43.8)
           : (ppmData?.compliancePercentage ?? 43.8));
 
     // 2b. Scope base datasets to selected site or group before category/vendor filters
@@ -336,38 +348,25 @@ export default function App() {
 
     if (foundSite) {
       // 1. ASSETS SCOPED TO SELECTED SITE
-      const siteTotalAssets = foundSite.total_assets ?? foundSite.activeAssets ?? 0;
-      const siteAssetHealth = isNum(foundSite.health) ? foundSite.health : 0;
-      const siteOp = siteTotalAssets > 0 ? Math.round(((siteAssetHealth || 0) / 100) * siteTotalAssets) : 0;
-      const siteMaint = Math.max(0, siteTotalAssets - siteOp);
+      // When a site is selected, assetPortfolioData is fetched with siteId directly from the API.
+      // Use live assetPortfolioData values if available, otherwise use foundSite health_score.
+      const hasLiveAssetData = assetPortfolioData && isNum(assetPortfolioData.total) && assetPortfolioData.total > 0;
+      const siteTotalAssets = hasLiveAssetData 
+        ? assetPortfolioData.total 
+        : (foundSite.total_assets ?? foundSite.activeAssets ?? 0);
+      const siteAssetHealth = hasLiveAssetData && isNum(assetPortfolioData.health_percentage)
+        ? assetPortfolioData.health_percentage
+        : (isNum(foundSite.health_score) ? foundSite.health_score : (isNum(foundSite.health) ? foundSite.health : 98.6));
+      const siteOp = hasLiveAssetData && isNum(assetPortfolioData.operational)
+        ? assetPortfolioData.operational
+        : (siteTotalAssets > 0 ? Math.round(((siteAssetHealth || 0) / 100) * siteTotalAssets) : 0);
+      const siteMaint = hasLiveAssetData && isNum(assetPortfolioData.maintenance)
+        ? assetPortfolioData.maintenance
+        : Math.max(0, siteTotalAssets - siteOp);
 
-      const baseCategories = assetPortfolioData?.category_breakdown || [];
-      const globalTotal = assetPortfolioData?.total || 516;
-      let remainingCatAssets = siteTotalAssets;
-      const siteCategories = baseCategories.map((c, idx) => {
-        if (siteTotalAssets === 0) {
-          return {
-            category: c.category,
-            name: c.category,
-            total: 0,
-            operational: 0,
-            score: 0,
-            health_percentage: 0
-          };
-        }
-        const ratio = globalTotal > 0 ? (c.total / globalTotal) : (1 / (baseCategories.length || 1));
-        const catTotal = idx === baseCategories.length - 1 ? remainingCatAssets : Math.min(remainingCatAssets, Math.round(ratio * siteTotalAssets));
-        remainingCatAssets = Math.max(0, remainingCatAssets - catTotal);
-        const catOp = Math.round(((siteAssetHealth || 0) / 100) * catTotal);
-        return {
-          category: c.category,
-          name: c.category,
-          total: catTotal,
-          operational: catOp,
-          score: catTotal > 0 ? siteAssetHealth : (c.health_percentage ?? 0),
-          health_percentage: catTotal > 0 ? siteAssetHealth : (c.health_percentage ?? 0)
-        };
-      });
+      const siteCategories = (hasLiveAssetData && assetPortfolioData.category_breakdown?.length > 0)
+        ? assetPortfolioData.category_breakdown
+        : [{ category: 'Uncategorized', name: 'Uncategorized', total: siteTotalAssets, operational: siteOp, score: siteAssetHealth, health_percentage: siteAssetHealth }];
 
       processedAssets = {
         ...assetPortfolioData,
@@ -395,27 +394,35 @@ export default function App() {
       };
 
       // 2. SERVICE DESK SCOPED TO SELECTED SITE
-      const siteTotalTickets = foundSite.tickets ?? 0;
-      const siteTat = isNum(foundSite.tat) ? foundSite.tat : 0;
-      const sitePending = foundSite.pending_tickets ?? 0;
-      const siteOpen = foundSite.open_tickets ?? 0;
-      const siteClosed = Math.max(0, siteTotalTickets - sitePending - siteOpen);
-      const siteWithinTat = Math.round(((siteTat || 0) / 100) * siteTotalTickets);
-      const siteOutsideTat = Math.max(0, siteTotalTickets - siteWithinTat);
+      const hasLiveServiceDesk = serviceDeskData && isNum(serviceDeskData.total) && serviceDeskData.total > 0;
+      const siteTotalTickets = hasLiveServiceDesk
+        ? serviceDeskData.total
+        : (foundSite.total_tickets ?? ((foundSite.pending_tickets ?? 0) + (foundSite.open_tickets ?? 0)) ?? foundSite.tickets ?? 0);
+      const siteTat = hasLiveServiceDesk && isNum(serviceDeskData.slaStatus?.tatCompliance)
+        ? serviceDeskData.slaStatus.tatCompliance
+        : (isNum(foundSite.sla_percentage) ? foundSite.sla_percentage : (isNum(foundSite.tat) ? foundSite.tat : 100.0));
+      const sitePending = hasLiveServiceDesk && isNum(serviceDeskData.pending)
+        ? serviceDeskData.pending
+        : (foundSite.pending_tickets ?? 0);
+      const siteOpen = hasLiveServiceDesk && isNum(serviceDeskData.open)
+        ? serviceDeskData.open
+        : (foundSite.open_tickets ?? 0);
+      const siteClosed = hasLiveServiceDesk && isNum(serviceDeskData.closed)
+        ? serviceDeskData.closed
+        : Math.max(0, siteTotalTickets - sitePending - siteOpen);
+      const siteWithinTat = hasLiveServiceDesk && isNum(serviceDeskData.slaStatus?.withinTat)
+        ? serviceDeskData.slaStatus.withinTat
+        : Math.round(((siteTat || 0) / 100) * siteTotalTickets);
+      const siteOutsideTat = hasLiveServiceDesk && isNum(serviceDeskData.slaStatus?.outsideTat)
+        ? serviceDeskData.slaStatus.outsideTat
+        : Math.max(0, siteTotalTickets - siteWithinTat);
 
-      const baseTicketsByCat = serviceDeskData?.ticketsByCategory || [];
-      const globalTicketsTotal = serviceDeskData?.total || 321;
-      let remainingTickets = siteTotalTickets;
-      const siteTicketsByCat = baseTicketsByCat.map((c, idx) => {
-        if (siteTotalTickets === 0) return { ...c, count: 0 };
-        const ratio = globalTicketsTotal > 0 ? (c.count / globalTicketsTotal) : (1 / baseTicketsByCat.length);
-        const count = idx === baseTicketsByCat.length - 1 ? remainingTickets : Math.min(remainingTickets, Math.round(ratio * siteTotalTickets));
-        remainingTickets = Math.max(0, remainingTickets - count);
-        return {
-          ...c,
-          count
-        };
-      });
+      const baseTicketsByCat = (hasLiveServiceDesk && serviceDeskData.ticketsByCategory?.length > 0)
+        ? serviceDeskData.ticketsByCategory
+        : [];
+      const siteTicketsByCat = baseTicketsByCat.length > 0
+        ? baseTicketsByCat
+        : [{ category: 'General', name: 'General', count: siteTotalTickets }];
 
       processedServiceDesk = {
         ...serviceDeskData,
@@ -443,21 +450,19 @@ export default function App() {
       };
 
       // 3. PPM SCOPED TO SELECTED SITE
-      const sitePpmComp = isNum(foundSite.ppm) ? foundSite.ppm : 0;
-      const siteScheduled = foundSite.raw?.scheduled_ppm ?? (sitePpmComp > 0 ? 8 : (siteTotalAssets > 0 ? 4 : 0));
-      const siteCompleted = Math.round(((sitePpmComp || 0) / 100) * siteScheduled);
-      const siteOverdue = Math.max(0, siteScheduled - siteCompleted);
-
-      const basePlannedVsAchieved = ppmData?.plannedVsAchieved || [];
-      const sitePlannedVsAchieved = basePlannedVsAchieved.map((c) => {
-        const planned = siteScheduled > 0 ? Math.max(1, Math.round(siteScheduled / (basePlannedVsAchieved.length || 1))) : 0;
-        const achieved = Math.round(((sitePpmComp || 0) / 100) * planned);
-        return {
-          ...c,
-          planned,
-          achieved
-        };
-      });
+      const hasLivePpm = ppmData && ppmData.scheduledTasks !== undefined;
+      const sitePpmComp = hasLivePpm && isNum(ppmData.compliancePercentage)
+        ? ppmData.compliancePercentage
+        : (isNum(foundSite.ppm_percentage) ? foundSite.ppm_percentage : (isNum(foundSite.ppm) ? foundSite.ppm : 0));
+      const siteScheduled = hasLivePpm 
+        ? ppmData.scheduledTasks 
+        : (foundSite.raw?.scheduled_ppm ?? (sitePpmComp > 0 ? 8 : (siteTotalAssets > 0 ? 4 : 0)));
+      const siteCompleted = hasLivePpm && ppmData.stats?.completed !== undefined
+        ? ppmData.stats.completed
+        : Math.round(((sitePpmComp || 0) / 100) * siteScheduled);
+      const siteOverdue = hasLivePpm && ppmData.stats?.overdue !== undefined
+        ? ppmData.stats.overdue
+        : Math.max(0, siteScheduled - siteCompleted);
 
       processedPpm = {
         ...ppmData,
@@ -469,7 +474,7 @@ export default function App() {
           overdue: siteOverdue,
           missed: 0
         },
-        plannedVsAchieved: sitePlannedVsAchieved,
+        plannedVsAchieved: (hasLivePpm && ppmData.plannedVsAchieved?.length > 0) ? ppmData.plannedVsAchieved : [],
         summary: {
           total_scheduled: siteScheduled,
           completed: siteCompleted,
@@ -672,42 +677,58 @@ export default function App() {
     // Determine final KPI values considering Category/Group/Site filters
     const finalAssetHealth = selectedCategory !== 'All Categories'
       ? processedAssets.health_percentage
-      : (foundSite ? baseHealth : (selectedGroup !== 'All Groups' ? baseHealth : (processedAssets?.health_percentage ?? 97.9)));
+      : (foundSite ? processedAssets.health_percentage : (selectedGroup !== 'All Groups' ? baseHealth : (processedAssets?.health_percentage ?? 97.9)));
 
     const finalAssetTotal = selectedCategory !== 'All Categories'
       ? processedAssets.total
-      : (foundSite ? baseAssets : (selectedGroup !== 'All Groups' ? baseAssets : (processedAssets?.total ?? 516)));
+      : (foundSite ? processedAssets.total : (selectedGroup !== 'All Groups' ? baseAssets : (processedAssets?.total ?? 516)));
 
     const finalAssetOp = selectedCategory !== 'All Categories'
       ? processedAssets.operational
-      : Math.round(((finalAssetHealth || 0) / 100) * finalAssetTotal);
+      : (foundSite ? processedAssets.operational : Math.round(((finalAssetHealth || 0) / 100) * finalAssetTotal));
 
-    const finalAssetMaint = Math.max(0, finalAssetTotal - finalAssetOp);
+    const finalAssetMaint = selectedCategory !== 'All Categories'
+      ? processedAssets.maintenance
+      : (foundSite ? processedAssets.maintenance : Math.max(0, finalAssetTotal - finalAssetOp));
 
     const finalServiceTat = selectedCategory !== 'All Categories'
       ? processedServiceDesk.slaStatus.tatCompliance
-      : (foundSite ? baseTat : (selectedGroup !== 'All Groups' ? baseTat : (processedServiceDesk?.slaStatus?.tatCompliance ?? 100.0)));
+      : (foundSite ? processedServiceDesk.slaStatus.tatCompliance : (selectedGroup !== 'All Groups' ? baseTat : (processedServiceDesk?.slaStatus?.tatCompliance ?? 100.0)));
 
     const finalServiceTotal = selectedCategory !== 'All Categories'
       ? processedServiceDesk.total
-      : (foundSite ? baseTickets : (selectedGroup !== 'All Groups' ? baseTickets : (processedServiceDesk?.total ?? 321)));
+      : (foundSite ? processedServiceDesk.total : (selectedGroup !== 'All Groups' ? baseTickets : (processedServiceDesk?.total ?? 321)));
 
-    const finalWithinTat = Math.round(((finalServiceTat || 0) / 100) * finalServiceTotal);
-    const finalOutsideTat = Math.max(0, finalServiceTotal - finalWithinTat);
+    const finalWithinTat = selectedCategory !== 'All Categories'
+      ? processedServiceDesk.slaStatus.withinTat
+      : (foundSite ? processedServiceDesk.slaStatus.withinTat : Math.round(((finalServiceTat || 0) / 100) * finalServiceTotal));
+
+    const finalOutsideTat = selectedCategory !== 'All Categories'
+      ? processedServiceDesk.slaStatus.outsideTat
+      : (foundSite ? processedServiceDesk.slaStatus.outsideTat : Math.max(0, finalServiceTotal - finalWithinTat));
 
     const finalPpmCompliance = selectedCategory !== 'All Categories'
       ? processedPpm.compliancePercentage
-      : (foundSite ? basePpm : (selectedGroup !== 'All Groups' ? basePpm : (processedPpm?.compliancePercentage ?? 43.8)));
+      : (foundSite ? processedPpm.compliancePercentage : (selectedGroup !== 'All Groups' ? basePpm : (processedPpm?.compliancePercentage ?? 93.8)));
 
     const finalPpmScheduled = selectedCategory !== 'All Categories'
       ? processedPpm.scheduledTasks
-      : (processedPpm?.scheduledTasks ?? 16);
+      : (foundSite ? processedPpm.scheduledTasks : (processedPpm?.scheduledTasks ?? 16));
 
     const finalPpmCompleted = selectedCategory !== 'All Categories'
       ? processedPpm.stats.completed
-      : (processedPpm?.stats?.completed ?? 7);
+      : (foundSite ? processedPpm.stats.completed : (processedPpm?.stats?.completed ?? 15));
 
     const finalPpmOverdue = Math.max(0, finalPpmScheduled - finalPpmCompleted);
+
+    const rawAssetTrend = groupedDashboardData?.asset_health?.summary?.vs_last_period;
+    const dynamicAssetTrend = isNum(rawAssetTrend) ? Number(rawAssetTrend) : 0.8;
+
+    const rawSlaTrend = groupedDashboardData?.sla_compliance?.summary?.vs_last_period;
+    const dynamicSlaTrend = isNum(rawSlaTrend) ? Number(rawSlaTrend) : 1.5;
+
+    const rawPpmTrend = groupedDashboardData?.ppm_compliance?.summary?.vs_last_period;
+    const dynamicPpmTrend = isNum(rawPpmTrend) ? Number(rawPpmTrend) : 50.0;
 
     return {
       assets: processedAssets,
@@ -718,11 +739,13 @@ export default function App() {
         assetHealth: {
           value: finalAssetHealth,
           unit: '%',
-          trend: 0.8,
-          trendType: 'up',
-          trendText: '+0.8% vs Prior Month',
+          trend: dynamicAssetTrend,
+          trendType: dynamicAssetTrend >= 0 ? 'up' : 'down',
+          trendText: `${dynamicAssetTrend >= 0 ? '+' : ''}${dynamicAssetTrend.toFixed(1)}% vs Prior Month`,
           target: 95,
-          targetText: '2.9% above 95% target',
+          targetText: (finalAssetHealth >= 95)
+            ? `${(finalAssetHealth - 95).toFixed(1)}% above 95% target`
+            : `${(95 - finalAssetHealth).toFixed(1)}% below 95% target`,
           submetrics: [
             { label: 'Total Asset', value: finalAssetTotal },
             { label: 'Operational', value: finalAssetOp, color: 'success' },
@@ -732,11 +755,13 @@ export default function App() {
         serviceRequestTat: {
           value: finalServiceTat,
           unit: '%',
-          trend: 1.5,
-          trendType: 'up',
-          trendText: '+1.5% vs Prior Month',
+          trend: dynamicSlaTrend,
+          trendType: dynamicSlaTrend >= 0 ? 'up' : 'down',
+          trendText: `${dynamicSlaTrend >= 0 ? '+' : ''}${dynamicSlaTrend.toFixed(1)}% vs Prior Month`,
           target: 95,
-          targetText: '5% above 95% target',
+          targetText: (finalServiceTat >= 95)
+            ? `${(finalServiceTat - 95).toFixed(1)}% above 95% target`
+            : `${(95 - finalServiceTat).toFixed(1)}% below 95% target`,
           submetrics: [
             { label: 'Total', value: finalServiceTotal },
             { label: 'Within TAT', value: finalWithinTat, color: 'success' },
@@ -746,11 +771,13 @@ export default function App() {
         ppmCompliance: {
           value: finalPpmCompliance,
           unit: '%',
-          trend: -2.1,
-          trendType: 'down',
-          trendText: '-2.1% vs Prior Month',
+          trend: dynamicPpmTrend,
+          trendType: dynamicPpmTrend >= 0 ? 'up' : 'down',
+          trendText: `${dynamicPpmTrend >= 0 ? '+' : ''}${dynamicPpmTrend.toFixed(1)}% vs Prior Month`,
           target: 90,
-          targetText: '46.2% below 90% target',
+          targetText: (finalPpmCompliance >= 90)
+            ? `${(finalPpmCompliance - 90).toFixed(1)}% above 90% target`
+            : `${(90 - finalPpmCompliance).toFixed(1)}% below 90% target`,
           submetrics: [
             { label: 'Total Scheduled', value: finalPpmScheduled },
             { label: 'Completed', value: finalPpmCompleted, color: 'success' },
